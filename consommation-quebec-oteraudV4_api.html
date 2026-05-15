@@ -571,10 +571,6 @@ const fmtKwh = v => {
   return Math.round(v).toLocaleString('fr-CA')+' kWh';
 };
 
-const REGIONS  = [...new Set(ALL_DATA.map(d=>d.region))].sort((a,b)=>a.localeCompare(b,'fr'));
-const SECTEURS = [...new Set(ALL_DATA.map(d=>d.secteur))].sort();
-const ANNEES   = [...new Set(ALL_DATA.map(d=>d.mois.substring(0,4)))].sort();
-
 /* ── Populate all selects ── */
 function populateSel(id, items, allLabel) {
   const s = document.getElementById(id);
@@ -585,9 +581,17 @@ function populateSel(id, items, allLabel) {
   s.value = cur;
 }
 function initSelects() {
+  // Calculé ici, après le chargement des données via l'API
+  const REGIONS  = [...new Set(ALL_DATA.map(d=>d.region))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const SECTEURS = [...new Set(ALL_DATA.map(d=>d.secteur))].sort();
+  const ANNEES   = [...new Set(ALL_DATA.map(d=>d.mois.substring(0,4)))].sort();
   ['fil-region','sec-region','evo-region'].forEach(id => populateSel(id, REGIONS, id==='fil-region'?'Toutes les régions':'Toutes'));
   ['fil-secteur','reg-secteur','evo-secteur','carte-secteur'].forEach(id => populateSel(id, SECTEURS, id==='fil-secteur'?'Tous les secteurs':'Tous'));
   ['fil-annee','reg-annee','sec-annee','carte-annee'].forEach(id => populateSel(id, ANNEES, id==='fil-annee'?'Toutes les années':'Toutes'));
+  // Rendre les constantes accessibles globalement pour les graphiques
+  window.REGIONS  = REGIONS;
+  window.SECTEURS = SECTEURS;
+  window.ANNEES   = ANNEES;
 }
 
 /* ── Chart.js defaults ── */
@@ -608,7 +612,7 @@ function buildRegionChart() {
   if(annee)   d = d.filter(x=>x.mois.startsWith(annee));
 
   const byRegion = {};
-  REGIONS.forEach(r => byRegion[r]=0);
+  (window.REGIONS||[]).forEach(r => byRegion[r]=0);
   d.forEach(x => byRegion[x.region] = (byRegion[x.region]||0) + x.kwh);
 
   let entries = Object.entries(byRegion);
@@ -655,10 +659,10 @@ function buildSecteurChart() {
   if(annee)  d = d.filter(x=>x.mois.startsWith(annee));
 
   const bySecteur = {};
-  SECTEURS.forEach(s=>bySecteur[s]=0);
+  (window.SECTEURS||[]).forEach(s=>bySecteur[s]=0);
   d.forEach(x=>bySecteur[x.secteur]=(bySecteur[x.secteur]||0)+x.kwh);
 
-  const labels = SECTEURS;
+  const labels = window.SECTEURS||[];
   const values = labels.map(s=>bySecteur[s]/1e6);
   const colors = labels.map(s=>SECTEUR_COLORS[s]||'#888');
 
@@ -887,7 +891,7 @@ function buildCarte() {
 
   // Sum by region
   const byRegion = {};
-  REGIONS.forEach(r=>byRegion[r]=0);
+  (window.REGIONS||[]).forEach(r=>byRegion[r]=0);
   d.forEach(x=>byRegion[x.region]=(byRegion[x.region]||0)+x.kwh);
 
   const values = Object.values(byRegion).filter(v=>v>0);
