@@ -627,8 +627,7 @@ function dlCSV(allData){
   const label=allData?'toutes-les-donnees':'donnees-filtrees';
   const rows=[['Date et heure','Année','Mois','Heure','Demande (MW)']];
   data.forEach(d=>rows.push([d.date,d.annee,d.mois,d.heure,Math.round(d.mw)]));
-  const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
-');
+  const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a'); a.href=url; a.download='demande-electricite-'+label+'.csv'; a.style.display='none';
