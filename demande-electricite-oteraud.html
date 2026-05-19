@@ -373,65 +373,6 @@ async function chargerDonnees() {
   }
 }
 
-function debounce(fn, delay) {
-  let timer;
-  return function(...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
-}
-
-/* ── Loader ── */
-function showLoader(msg) {
-  document.getElementById('loader-overlay').style.display = 'flex';
-  document.getElementById('loader-msg').textContent = msg;
-}
-function hideLoader() {
-  document.getElementById('loader-overlay').style.display = 'none';
-}
-
-/* ── Chargement des données ── */
-async function chargerDonnees() {
-  const now = Date.now();
-  if (_apiCache && _apiCacheTime && (now - _apiCacheTime) < API_CACHE_DURATION) {
-    console.log('Données servies depuis le cache mémoire local');
-    ALL_DATA = _apiCache;
-    hideLoader();
-    initSelects();
-    applyFilters();
-    document.getElementById('total-badge').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' entrées';
-    return;
-  }
-
-  showLoader('Connexion au serveur OTERAUD…');
-  try {
-    showLoader('Chargement des données Hydro-Québec…');
-    const res = await fetch(API_BACKEND);
-    if (!res.ok) throw new Error('Erreur serveur (' + res.status + ')');
-    const data = await res.json();
-    if (!Array.isArray(data) || data.length === 0)
-      throw new Error('Aucune donnée reçue');
-
-    ALL_DATA = data;
-    _apiCache = data;
-    _apiCacheTime = now;
-
-    const cached = res.headers.get('X-Cache') === 'HIT';
-    console.log('Données chargées:', ALL_DATA.length, 'entrées', cached ? '(cache serveur)' : '(API fraîche)');
-
-    hideLoader();
-    initSelects();
-    applyFilters();
-    document.getElementById('total-badge').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' entrées';
-
-  } catch (err) {
-    document.getElementById('loader-msg').textContent = '⚠ Erreur de chargement : ' + err.message + ' — Vérifiez la console (F12) pour plus de détails.';
-    document.getElementById('loader-spinner').style.display = 'none';
-    console.error('Détail erreur chargement données:', err);
-  }
-}
-
-/* ── Utilitaires ── */
 const fmtMW = v => Math.round(v).toLocaleString('fr-CA') + ' MW';
 const fmtMWn = v => Math.round(v).toLocaleString('fr-CA');
 const MOIS_NOMS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -588,7 +529,6 @@ function showPage(name) {
 const PAGE_SIZE=50;
 let filtered=[...ALL_DATA], sortCol='date', sortAsc=false, page=1;
 
-function debounce(fn,d){let t;return function(...a){clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),d);}}
 
 function applyFilters() {
   const q     = document.getElementById('search').value.toLowerCase().trim();
@@ -726,4 +666,3 @@ document.getElementById('fil-mois').addEventListener('change', applyFilters);
 chargerDonnees();
 </script>
 </body>
-</html>
