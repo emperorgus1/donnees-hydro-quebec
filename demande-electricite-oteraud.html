@@ -346,22 +346,29 @@ function hideLoader() {
 }
 
 async function chargerDonnees() {
-  showLoader('Chargement des données Hydro-Québec…');
+  showLoader('Connexion au serveur OTERAUD…');
   try {
-    const res = await fetch('demande-electricite-data.json');
-    if (!res.ok) throw new Error('Fichier de données introuvable (' + res.status + ')');
+    showLoader('Chargement des données Hydro-Québec…');
+    const res = await fetch('/api/demande-electricite');
+    if (!res.ok) throw new Error('Erreur serveur (' + res.status + ')');
 
-    // Lire le JSON en streaming pour éviter de bloquer le thread principal
+    showLoader('Traitement des données…');
     const text = await res.text();
     ALL_DATA = JSON.parse(text);
+
+    if (!Array.isArray(ALL_DATA) || ALL_DATA.length === 0)
+      throw new Error('Aucune donnée reçue');
+
+    const cached = res.headers.get('X-Cache') === 'HIT';
+    console.log('Données chargées:', ALL_DATA.length, 'entrées', cached ? '(cache serveur)' : '(API fraîche)');
 
     hideLoader();
     initSelects();
     applyFilters();
     document.getElementById('total-badge').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' entrées';
-    console.log('Données chargées:', ALL_DATA.length, 'entrées');
+
   } catch (err) {
-    document.getElementById('loader-msg-bar').textContent = '⚠ Erreur : ' + err.message;
+    document.getElementById('loader-msg-bar').textContent = '⚠ Erreur : ' + err.message + ' — Vérifiez que le site est hébergé sur Netlify.';
     console.error(err);
   }
 }
