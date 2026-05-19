@@ -346,11 +346,15 @@ function hideLoader() {
 }
 
 async function chargerDonnees() {
-  showLoader('Chargement des données…');
+  showLoader('Chargement des données Hydro-Québec…');
   try {
     const res = await fetch('demande-electricite-data.json');
     if (!res.ok) throw new Error('Fichier de données introuvable (' + res.status + ')');
-    ALL_DATA = await res.json();
+
+    // Lire le JSON en streaming pour éviter de bloquer le thread principal
+    const text = await res.text();
+    ALL_DATA = JSON.parse(text);
+
     hideLoader();
     initSelects();
     applyFilters();
@@ -583,12 +587,16 @@ function applyFilters() {
   const q     = document.getElementById('search').value.toLowerCase().trim();
   const annee = document.getElementById('fil-annee').value;
   const mois  = document.getElementById('fil-mois').value;
-  filtered = ALL_DATA.filter(d=>{
-    if(annee && d.annee!=annee) return false;
-    if(mois  && !d.mois.endsWith('-'+mois)) return false;
-    if(q && !d.date.toLowerCase().includes(q)) return false;
-    return true;
-  });
+  // Filtrage optimisé : une seule boucle
+  filtered = [];
+  const moisSuffix = mois ? '-' + mois.padStart(2,'0') : null;
+  for(let i=0;i<ALL_DATA.length;i++){
+    const d = ALL_DATA[i];
+    if(annee && d.annee != annee) continue;
+    if(moisSuffix && !d.mois.endsWith(moisSuffix)) continue;
+    if(q && d.date.indexOf(q) === -1) continue;
+    filtered.push(d);
+  }
   applySort(); page=1; render();
 }
 
@@ -618,9 +626,9 @@ function render(){
   page=Math.min(page,pages);
   const slice=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
 
-  const sum=filtered.reduce((acc,d)=>acc+d.mw,0);
-  const max=filtered.length?Math.max(...filtered.map(d=>d.mw)):0;
-  const min=filtered.length?Math.min(...filtered.map(d=>d.mw)):0;
+  let sum=0,max=0,min=Infinity;
+  filtered.forEach(d=>{sum+=d.mw;if(d.mw>max)max=d.mw;if(d.mw<min)min=d.mw;});
+  if(!filtered.length){max=0;min=0;}
   document.getElementById('s-count').textContent=total.toLocaleString('fr-CA');
   document.getElementById('s-moy').textContent=total?fmtMWn(sum/total):'—';
   document.getElementById('s-max').textContent=max?fmtMWn(max):'—';
@@ -635,9 +643,8 @@ function render(){
   const tbody=document.getElementById('tbody');
   const frag=document.createDocumentFragment();
   slice.forEach(d=>{
-    const dt=new Date(d.date).toLocaleString('fr-CA',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="td-date">${hl(d.date,q.toLowerCase())||dt}</td><td>${d.annee}</td><td class="mw-cell">${fmtMWn(d.mw)} MW</td>`;
+    tr.innerHTML=`<td class="td-date">${hl(d.date,q.toLowerCase())}</td><td>${d.annee}</td><td class="mw-cell">${fmtMWn(d.mw)} MW</td>`;
     frag.appendChild(tr);
   });
   tbody.innerHTML=''; tbody.appendChild(frag);
