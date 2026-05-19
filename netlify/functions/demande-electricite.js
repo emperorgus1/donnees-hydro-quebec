@@ -56,21 +56,40 @@ exports.handler = async function(event, context) {
     ) || keys[1];
     console.log(`Champs — date: "${dateKey}", MW: "${mwKey}"`);
 
+    // Formateur pour convertir en heure de Montréal
+    const mtlFmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Montreal',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    });
+
     const data = rawData
       .map(r => {
-        const dateStr = String(r[dateKey] || '').substring(0, 19);
-        if (!dateStr) return null;
-        const dt = new Date(dateStr);
+        const rawDate = String(r[dateKey] || '');
+        if (!rawDate) return null;
+        const dt = new Date(rawDate);
         if (isNaN(dt.getTime())) return null;
         const mw = parseFloat(r[mwKey]);
         if (!mw || mw <= 0) return null;
+
+        // Convertir en heure de Montréal
+        const parts = mtlFmt.formatToParts(dt);
+        const p = {};
+        parts.forEach(({ type, value }) => { p[type] = value; });
+        const annee  = parseInt(p.year);
+        const moisN  = parseInt(p.month);
+        const jourN  = parseInt(p.day);
+        const heureN = parseInt(p.hour) % 24;
+        const dateLocal = `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}`;
+
         return {
-          date:  dateStr,
+          date:  dateLocal,
           mw:    Math.round(mw * 100) / 100,
-          annee: dt.getFullYear(),
-          mois:  `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`,
-          jour:  dt.toISOString().substring(0, 10),
-          heure: dt.getHours()
+          annee: annee,
+          mois:  `${p.year}-${p.month}`,
+          jour:  `${p.year}-${p.month}-${p.day}`,
+          heure: heureN
         };
       })
       .filter(Boolean);
