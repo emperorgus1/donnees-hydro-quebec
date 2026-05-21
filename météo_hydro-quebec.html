@@ -488,13 +488,9 @@ footer .footer-credits {
   background: var(--ocre-light);
   border: 1px solid #f0d9a0;
   border-radius: 5px;
-  padding: 3px 8px;
+  padding: 3px 9px;
   white-space: nowrap;
-}
-.btn-period:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-  pointer-events: none;
+  align-self: center;
 }
 </style>
 </head>
@@ -614,12 +610,12 @@ footer .footer-credits {
   <div class="sel-group">
     <label>Période rapide</label>
     <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
-      <button class="btn-period active" id="btn-7j"   onclick="setPeriod(7, this)">7 j</button>
-      <button class="btn-period"        id="btn-30j"  onclick="setPeriod(30, this)">30 j</button>
-      <button class="btn-period"        id="btn-90j"  onclick="setPeriod(90, this)">3 mois</button>
-      <button class="btn-period"        id="btn-365j" onclick="setPeriod(365, this)">1 an</button>
+      <button class="btn-period active" id="btn-7j"    onclick="setPeriod(7, this)">7 j</button>
+      <button class="btn-period"        id="btn-30j"   onclick="setPeriod(30, this)">30 j</button>
+      <button class="btn-period"        id="btn-90j"   onclick="setPeriod(90, this)">3 mois</button>
+      <button class="btn-period"        id="btn-365j"  onclick="setPeriod(365, this)">1 an</button>
       <button class="btn-period"        id="btn-perso" onclick="setPeriod(0, this)">Perso.</button>
-      <span class="date-max-badge" id="badge-date-max" title="Dernière date disponible dans la source">⏳ Vérification…</span>
+      <span class="date-max-badge" id="badge-date-max">⏳ Vérification…</span>
     </div>
   </div>
 
@@ -713,7 +709,7 @@ footer .footer-credits {
 
     <div class="accueil-tableau-btn">
       <p>Consultez les données brutes heure par heure : filtrez par date, triez les colonnes et téléchargez les résultats en format CSV.</p>
-      <button class="btn-tableau" onclick="showPage('tableau')">⊞ Accès au tableau de données</button>
+      <button class="btn-tableau" onclick="showPage('tableau')">Accès au tableau de données</button>
     </div>
 
     <div class="accueil-tableau-btn">
@@ -761,8 +757,9 @@ footer .footer-credits {
 
 <script>
 // ══ CONFIGURATION ══
-const API_URL  = '/api/meteo'; // Fonction Netlify proxy
-let   ALL_DATA = [];           // Données chargées en mémoire
+const API_URL = '/api/meteo'; // Fonction Netlify proxy
+let ALL_DATA  = [];           // Données chargées en mémoire
+let DATE_MAX  = null;         // Dernière date disponible dans la source HQ
 
 // ══ NAVIGATION ══
 function showPage(id) {
@@ -777,85 +774,6 @@ function showPage(id) {
     }
   });
 }
-
-// ══ RACCOURCIS PÉRIODE ══
-let activePeriodDays = 7;
-let DATE_MAX = null; // Date maximale disponible dans l'API
-
-// Récupère la date maximale disponible dans la source de données
-async function chargerDateMax() {
-  const badge = document.getElementById('badge-date-max');
-  try {
-    const url = 'https://donnees.hydroquebec.com/api/explore/v2.1/catalog/datasets/historique-donnees-meteo/records'
-      + '?limit=1&order_by=date_locale%20DESC&select=date_locale&timezone=America/Toronto';
-    const res  = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.results && data.results.length > 0) {
-      const raw = data.results[0].date_locale || data.results[0].date_utc || '';
-      // Garder uniquement la partie YYYY-MM-DD
-      DATE_MAX = raw.substring(0, 10);
-      badge.textContent = 'Données jusqu'au ' + DATE_MAX;
-      badge.title = 'Dernière date disponible dans la source Hydro-Québec';
-      // Bloquer le champ date-fin au max disponible
-      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
-      // Désactiver les boutons de période dont la plage dépasserait le passé disponible
-      ajusterBoutonsPeriode();
-      // Recalculer les dates par défaut (7 jours) avec DATE_MAX comme borne supérieure
-      initDates();
-    }
-  } catch (e) {
-    badge.textContent = 'Date inconnue';
-    badge.title = 'Impossible de récupérer la date maximale : ' + e.message;
-    console.warn('chargerDateMax :', e.message);
-    initDates(); // Utiliser la date du jour comme fallback
-  }
-}
-
-// Désactive les boutons de période rapide si la plage excède les données disponibles
-function ajusterBoutonsPeriode() {
-  if (!DATE_MAX) return;
-  const max    = new Date(DATE_MAX);
-  const heute  = new Date();
-  // Nombre de jours entre aujourd'hui et DATE_MAX (peut être négatif si DATE_MAX < aujourd'hui)
-  const joursDispos = Math.floor((max - heute) / 86400000); // négatif si données en retard
-  // On n'active un bouton que si DATE_MAX - N jours >= "assez loin"
-  // En pratique : tous les boutons restent disponibles, on ajuste juste les dates calculées
-  // (les données peuvent couvrir des années, juste pas jusqu'à aujourd'hui)
-  const map = { 'btn-7j': 7, 'btn-30j': 30, 'btn-90j': 90, 'btn-365j': 365 };
-  // Aucun bouton à désactiver : les plages restent valides, elles seront simplement
-  // recadrées sur DATE_MAX comme borne supérieure dans setPeriod
-}
-
-function setPeriod(days, btn) {
-  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  activePeriodDays = days;
-  const customDates = document.getElementById('custom-dates');
-  if (days === 0) {
-    customDates.style.display = 'flex';
-  } else {
-    customDates.style.display = 'none';
-    // Utiliser DATE_MAX comme borne supérieure si disponible, sinon aujourd'hui
-    const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
-    const debut = new Date(fin);
-    debut.setDate(fin.getDate() - days);
-    document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
-    document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
-  }
-}
-
-// Initialiser les dates par défaut (7 jours en arrière depuis DATE_MAX)
-function initDates() {
-  const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
-  const debut = new Date(fin);
-  debut.setDate(fin.getDate() - 7);
-  document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
-  document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
-}
-
-// Lancer la récupération de la date max au chargement de la page
-chargerDateMax();
 
 // ══ UTILITAIRES ══
 function showLoader(msg, progress) {
@@ -875,7 +793,6 @@ function cacherErreur() {
   document.getElementById('error-bar').classList.remove('visible');
 }
 
-// Formatage des valeurs selon la variable
 function fmtVal(v, variable) {
   if (v === null || v === undefined) return '—';
   const n = parseFloat(v);
@@ -887,6 +804,55 @@ function fmtVal(v, variable) {
   return n.toFixed(1) + (unites[variable] || '');
 }
 
+// ══ GESTION DES DATES ══
+function initDates() {
+  const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+  const debut = new Date(fin);
+  debut.setDate(fin.getDate() - 7);
+  document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
+  document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+}
+
+function setPeriod(days, btn) {
+  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activePeriodDays = days;
+  const customDates = document.getElementById('custom-dates');
+  if (days === 0) {
+    customDates.style.display = 'flex';
+  } else {
+    customDates.style.display = 'none';
+    const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+    const debut = new Date(fin);
+    debut.setDate(fin.getDate() - days);
+    document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
+    document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+  }
+}
+
+let activePeriodDays = 7;
+
+// ══ CHARGEMENT DE LA DATE MAX (via Netlify, sans CORS) ══
+async function chargerDateMax() {
+  const badge = document.getElementById('badge-date-max');
+  try {
+    const res = await fetch('/api/meteo?dateMax=1');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.dateMax) {
+      DATE_MAX = data.dateMax;
+      badge.textContent = 'Données jusqu\'au ' + DATE_MAX;
+      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
+    } else {
+      throw new Error('dateMax absent');
+    }
+  } catch (e) {
+    badge.textContent = 'Date inconnue';
+    console.warn('chargerDateMax :', e.message);
+  }
+  initDates(); // toujours initialiser, avec DATE_MAX ou fallback
+}
+
 // ══ CHARGEMENT VIA LA FONCTION NETLIFY ══
 async function chargerDonnees() {
   const station   = document.getElementById('sel-station').value;
@@ -894,7 +860,6 @@ async function chargerDonnees() {
   const dateDebut = document.getElementById('date-debut').value;
   const dateFin   = document.getElementById('date-fin').value;
 
-  // Validation
   if (!station)               { showError('Veuillez choisir une station.'); return; }
   if (!dateDebut || !dateFin) { showError('Veuillez définir une période.'); return; }
   if (dateDebut > dateFin)    { showError('La date de début doit être antérieure à la date de fin.'); return; }
@@ -906,9 +871,7 @@ async function chargerDonnees() {
   btn.textContent = '⏳ Chargement…';
 
   try {
-    showLoader('Connexion à l'API Hydro-Québec…');
-
-    // Appel à la fonction Netlify (proxy côté serveur)
+    showLoader('Connexion à l\'API Hydro-Québec…');
     const params = new URLSearchParams({ station, dateDebut, dateFin, variable });
     const res    = await fetch(`${API_URL}?${params}`);
 
@@ -926,10 +889,9 @@ async function chargerDonnees() {
 
     ALL_DATA = data.results;
 
-    // ── Calcul des statistiques ──
     // Détecter la clé de la variable dans les résultats
     const varKeys = {
-      t: ['t_c', 't', 'température [°c]'],
+      t:  ['t_c', 't', 'température [°c]'],
       tf: ['tf_c', 'tf', 'température humide [°c]'],
       hr: ['hr', 'humidité relative [%]'],
       pa: ['pa_hpa', 'pa', 'pression atmosphérique [hpa]'],
@@ -938,8 +900,7 @@ async function chargerDonnees() {
       dv: ['dv', 'direction du vent [0-360°]']
     };
     const candidates = varKeys[variable] || [variable];
-    const allKeys    = Object.keys(ALL_DATA[0]).map(k => k.toLowerCase());
-    let realKey      = null;
+    let realKey = null;
     for (const c of candidates) {
       const found = Object.keys(ALL_DATA[0]).find(k => k.toLowerCase() === c.toLowerCase());
       if (found) { realKey = found; break; }
@@ -953,16 +914,14 @@ async function chargerDonnees() {
     const vMax = valeurs.length ? Math.max(...valeurs) : null;
     const vMoy = valeurs.length ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length : null;
 
-    // ── Mise à jour barre d'état ──
-    document.getElementById('s-station').textContent        = station;
-    document.getElementById('s-periode').textContent        = dateDebut + ' → ' + dateFin;
+    document.getElementById('s-station').textContent         = station;
+    document.getElementById('s-periode').textContent         = dateDebut + ' → ' + dateFin;
     document.getElementById('s-enregistrements').textContent = ALL_DATA.length.toLocaleString('fr-CA');
-    document.getElementById('s-min').textContent            = fmtVal(vMin, variable);
-    document.getElementById('s-moy').textContent            = fmtVal(vMoy, variable);
-    document.getElementById('s-max').textContent            = fmtVal(vMax, variable);
+    document.getElementById('s-min').textContent             = fmtVal(vMin, variable);
+    document.getElementById('s-moy').textContent             = fmtVal(vMoy, variable);
+    document.getElementById('s-max').textContent             = fmtVal(vMax, variable);
     document.getElementById('status-bar').classList.add('visible');
 
-    // Labels dynamiques selon la variable
     const varLabels = {
       t:  ['Min °C','Moy. °C','Max °C'],
       tf: ['Min °C','Moy. °C','Max °C'],
@@ -978,7 +937,6 @@ async function chargerDonnees() {
     if (statEls[4]) statEls[4].textContent = lbls[1];
     if (statEls[5]) statEls[5].textContent = lbls[2];
 
-    // Message dans les pages
     const nRec = ALL_DATA.length.toLocaleString('fr-CA');
     ['graphique', 'carte', 'tableau'].forEach(id => {
       const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
@@ -999,6 +957,10 @@ async function chargerDonnees() {
     btn.textContent = '⬇ Charger les données';
   }
 }
+
+// ══ LANCEMENT AU CHARGEMENT ══
+// chargerDateMax est async : elle s'exécute sans bloquer le reste de la page
+chargerDateMax();
 </script>
 
 </body>
