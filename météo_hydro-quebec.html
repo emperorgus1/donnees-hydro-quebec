@@ -447,6 +447,38 @@ footer .footer-credits {
   display: block;
   flex-shrink: 0;
 }
+
+/* ══ LOADER ══ */
+.loader-bar {
+  background: var(--ocre-light);
+  border-bottom: 1px solid #f0d9a0;
+  padding: 8px 2rem;
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+.loader-bar.visible { display: flex; }
+.loader-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--creme);
+  border-top-color: var(--terre);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-msg { font-size: 0.78rem; font-weight: 600; color: var(--terre); }
+.loader-progress { font-size: 0.7rem; color: #9a7040; font-weight: 500; margin-left: auto; }
+.error-bar {
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  padding: 8px 2rem;
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+.error-bar.visible { display: flex; }
+.error-msg { font-size: 0.78rem; font-weight: 600; color: #b91c1c; }
 </style>
 </head>
 <body>
@@ -592,6 +624,19 @@ footer .footer-credits {
 </div>
 </div>
 
+<!-- ══ LOADER ══ -->
+<div class="loader-bar" id="loader-bar">
+  <div class="loader-spinner"></div>
+  <span class="loader-msg" id="loader-msg">Chargement…</span>
+  <span class="loader-progress" id="loader-progress"></span>
+</div>
+
+<!-- ══ BARRE D'ERREUR ══ -->
+<div class="error-bar" id="error-bar">
+  <span class="error-msg" id="error-msg"></span>
+  <button onclick="cacherErreur()" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:1rem;color:#b91c1c;">✕</button>
+</div>
+
 <!-- ══ BARRE D'ÉTAT ══ -->
 <div class="status-bar" id="status-bar">
   <div class="stat">
@@ -650,7 +695,7 @@ footer .footer-credits {
 
     <div class="accueil-tableau-btn">
       <p>Consultez les données brutes heure par heure : filtrez par date, triez les colonnes et téléchargez les résultats en format CSV.</p>
-      <button class="btn-tableau" onclick="showPage('tableau')">⊞ Accès au tableau de données</button>
+      <button class="btn-tableau" onclick="showPage('tableau')">Accès au tableau de données</button>
     </div>
 
     <div class="accueil-tableau-btn">
@@ -697,17 +742,19 @@ footer .footer-credits {
 </footer>
 
 <script>
+// ══ CONFIGURATION ══
+const API_URL  = '/api/meteo'; // Fonction Netlify proxy
+let   ALL_DATA = [];           // Données chargées en mémoire
+
 // ══ NAVIGATION ══
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
-  const tabs = document.querySelectorAll('.nav-tab');
-  tabs.forEach(t => {
-    if (t.textContent.toLowerCase().includes(id === 'accueil' ? 'accueil'
-        : id === 'graphique' ? 'graphique'
-        : id === 'carte' ? 'carte'
-        : 'tableau')) {
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(
+      id === 'accueil' ? 'accueil' : id === 'graphique' ? 'graphique'
+      : id === 'carte' ? 'carte' : 'tableau')) {
       t.classList.add('active');
     }
   });
@@ -725,57 +772,164 @@ function setPeriod(days, btn) {
     customDates.style.display = 'flex';
   } else {
     customDates.style.display = 'none';
-    // Pré-remplir les dates pour affichage informatif
-    const fin = new Date();
+    const fin   = new Date();
     const debut = new Date();
     debut.setDate(fin.getDate() - days);
-    document.getElementById('date-fin').value = fin.toISOString().split('T')[0];
+    document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
     document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
   }
 }
 
-// Initialiser les dates par défaut (7 jours)
+// Dates par défaut : 7 derniers jours
 (function initDates() {
-  const fin = new Date();
+  const fin   = new Date();
   const debut = new Date();
   debut.setDate(fin.getDate() - 7);
-  document.getElementById('date-fin').value = fin.toISOString().split('T')[0];
+  document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
   document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
 })();
 
-// ══ CHARGEMENT DES DONNÉES (stub — sera branché à l'API à l'étape 2) ══
-function chargerDonnees() {
-  const station = document.getElementById('sel-station').value;
-  if (!station) {
-    alert('Veuillez choisir une station.');
-    return;
-  }
+// ══ UTILITAIRES ══
+function showLoader(msg, progress) {
+  document.getElementById('loader-bar').classList.add('visible');
+  document.getElementById('loader-msg').textContent      = msg;
+  document.getElementById('loader-progress').textContent = progress || '';
+}
+function hideLoader() {
+  document.getElementById('loader-bar').classList.remove('visible');
+  document.getElementById('loader-progress').textContent = '';
+}
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-bar').classList.add('visible');
+}
+function cacherErreur() {
+  document.getElementById('error-bar').classList.remove('visible');
+}
+
+// Formatage des valeurs selon la variable
+function fmtVal(v, variable) {
+  if (v === null || v === undefined) return '—';
+  const n = parseFloat(v);
+  if (isNaN(n)) return '—';
+  const unites = {
+    t: '°C', tf: '°C', hr: '%', pa: ' hPa',
+    rs: ' kJ/m²/h', vv: ' km/h', dv: '°'
+  };
+  return n.toFixed(1) + (unites[variable] || '');
+}
+
+// ══ CHARGEMENT VIA LA FONCTION NETLIFY ══
+async function chargerDonnees() {
+  const station   = document.getElementById('sel-station').value;
+  const variable  = document.getElementById('sel-variable').value;
+  const dateDebut = document.getElementById('date-debut').value;
+  const dateFin   = document.getElementById('date-fin').value;
+
+  // Validation
+  if (!station)               { showError('Veuillez choisir une station.'); return; }
+  if (!dateDebut || !dateFin) { showError('Veuillez définir une période.'); return; }
+  if (dateDebut > dateFin)    { showError('La date de début doit être antérieure à la date de fin.'); return; }
+
+  cacherErreur();
+  ALL_DATA = [];
   const btn = document.getElementById('btn-charger');
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = '⏳ Chargement…';
 
-  // Simulation — sera remplacé par l'appel API réel à l'étape 2
-  setTimeout(() => {
-    btn.disabled = false;
-    btn.textContent = '⬇ Charger les données';
+  try {
+    showLoader('Connexion à l\'API Hydro-Québec…');
 
-    // Afficher la barre d'état
-    const dateDebut = document.getElementById('date-debut').value;
-    const dateFin   = document.getElementById('date-fin').value;
-    document.getElementById('s-station').textContent = station;
-    document.getElementById('s-periode').textContent = dateDebut + ' → ' + dateFin;
-    document.getElementById('s-enregistrements').textContent = '—';
-    document.getElementById('s-min').textContent = '—';
-    document.getElementById('s-moy').textContent = '—';
-    document.getElementById('s-max').textContent = '—';
+    // Appel à la fonction Netlify (proxy côté serveur)
+    const params = new URLSearchParams({ station, dateDebut, dateFin, variable });
+    const res    = await fetch(`${API_URL}?${params}`);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `Erreur HTTP ${res.status}` }));
+      throw new Error(err.error || `Erreur HTTP ${res.status}`);
+    }
+
+    showLoader('Traitement des données…');
+    const data = await res.json();
+
+    if (!data.results || data.results.length === 0) {
+      throw new Error(`Aucune donnée trouvée pour ${station} entre ${dateDebut} et ${dateFin}.`);
+    }
+
+    ALL_DATA = data.results;
+
+    // ── Calcul des statistiques ──
+    // Détecter la clé de la variable dans les résultats
+    const varKeys = {
+      t: ['t_c', 't', 'température [°c]'],
+      tf: ['tf_c', 'tf', 'température humide [°c]'],
+      hr: ['hr', 'humidité relative [%]'],
+      pa: ['pa_hpa', 'pa', 'pression atmosphérique [hpa]'],
+      rs: ['rs_kjm2h', 'rs', 'rayonnement solaire total sur une surface horizontale [kj/m²/h]'],
+      vv: ['vv_kmh', 'vv', 'vitesse du vent [km/h]'],
+      dv: ['dv', 'direction du vent [0-360°]']
+    };
+    const candidates = varKeys[variable] || [variable];
+    const allKeys    = Object.keys(ALL_DATA[0]).map(k => k.toLowerCase());
+    let realKey      = null;
+    for (const c of candidates) {
+      const found = Object.keys(ALL_DATA[0]).find(k => k.toLowerCase() === c.toLowerCase());
+      if (found) { realKey = found; break; }
+    }
+
+    const valeurs = ALL_DATA
+      .map(r => realKey ? parseFloat(r[realKey]) : null)
+      .filter(v => v !== null && !isNaN(v));
+
+    const vMin = valeurs.length ? Math.min(...valeurs) : null;
+    const vMax = valeurs.length ? Math.max(...valeurs) : null;
+    const vMoy = valeurs.length ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length : null;
+
+    // ── Mise à jour barre d'état ──
+    document.getElementById('s-station').textContent        = station;
+    document.getElementById('s-periode').textContent        = dateDebut + ' → ' + dateFin;
+    document.getElementById('s-enregistrements').textContent = ALL_DATA.length.toLocaleString('fr-CA');
+    document.getElementById('s-min').textContent            = fmtVal(vMin, variable);
+    document.getElementById('s-moy').textContent            = fmtVal(vMoy, variable);
+    document.getElementById('s-max').textContent            = fmtVal(vMax, variable);
     document.getElementById('status-bar').classList.add('visible');
 
-    // Afficher message dans les pages contenu
+    // Labels dynamiques selon la variable
+    const varLabels = {
+      t:  ['Min °C','Moy. °C','Max °C'],
+      tf: ['Min °C','Moy. °C','Max °C'],
+      hr: ['Min %','Moy. %','Max %'],
+      pa: ['Min hPa','Moy. hPa','Max hPa'],
+      rs: ['Min kJ/m²/h','Moy. kJ/m²/h','Max kJ/m²/h'],
+      vv: ['Min km/h','Moy. km/h','Max km/h'],
+      dv: ['Min °','Moy. °','Max °']
+    };
+    const lbls = varLabels[variable] || ['Min','Moy.','Max'];
+    const statEls = document.querySelectorAll('#status-bar .stat .stat-lbl');
+    if (statEls[3]) statEls[3].textContent = lbls[0];
+    if (statEls[4]) statEls[4].textContent = lbls[1];
+    if (statEls[5]) statEls[5].textContent = lbls[2];
+
+    // Message dans les pages
+    const nRec = ALL_DATA.length.toLocaleString('fr-CA');
     ['graphique', 'carte', 'tableau'].forEach(id => {
       const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
-      if (ph) ph.innerHTML = 'Connexion à l\'API prête. <strong>Étape 2</strong> : branchement des données réelles.';
+      if (ph) ph.innerHTML =
+        `<strong>${nRec} enregistrements</strong> chargés pour <strong>${station}</strong>.<br>Variable détectée : <code>${realKey || '?'}</code>`;
     });
-  }, 800);
+
+    console.log('✅ Données chargées :', ALL_DATA.length, 'enregistrements');
+    console.log('Clé variable :', realKey);
+    console.log('Exemple :', ALL_DATA[0]);
+
+  } catch (err) {
+    showError('Erreur : ' + err.message);
+    console.error(err);
+  } finally {
+    hideLoader();
+    btn.disabled    = false;
+    btn.textContent = '⬇ Charger les données';
+  }
 }
 </script>
 
