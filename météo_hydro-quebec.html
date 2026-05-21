@@ -3,10 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demande d'électricité — OTERAUD</title>
+<title>Données météo — OTERAUD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -21,127 +20,444 @@
   --ocre-light:  #fef3dc;
   --font: 'Montserrat', sans-serif;
 }
-body { font-family: var(--font); background: var(--creme-light); color: var(--noir); min-height: 100vh; font-size: 14px; }
 
-/* NAV */
-.app-nav { background: var(--noir); display: flex; gap: 0; padding: 0 2rem; border-bottom: 3px solid var(--ocre); overflow-x: auto; }
-.nav-tab { padding: 11px 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -3px; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+body {
+  font-family: var(--font);
+  background: var(--creme-light);
+  color: var(--noir);
+  min-height: 100vh;
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══ BANDEAU OTERAUD ══ */
+.oteraud-bar {
+  background: var(--noir);
+  color: var(--creme);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.oteraud-bar a {
+  color: var(--creme);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+.oteraud-bar a:hover { color: var(--ocre); }
+
+/* ══ HEADER ══ */
+header {
+  background: var(--teal);
+  color: #fff;
+  padding: 0.75rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 4px solid var(--ocre);
+}
+.header-logo-block {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.header-logo-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255,255,255,0.35);
+  flex-shrink: 0;
+}
+.header-left h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.header-left p {
+  font-size: 0.68rem;
+  font-weight: 500;
+  opacity: 0.82;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.header-badge {
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ══ NAVIGATION ══ */
+.app-nav {
+  background: var(--noir);
+  display: flex;
+  gap: 0;
+  padding: 0 2rem;
+  border-bottom: 3px solid var(--ocre);
+}
+.nav-tab {
+  padding: 11px 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -3px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
 .nav-tab:hover { color: rgba(255,255,255,0.85); }
-.nav-tab.active { color: var(--ocre); border-bottom-color: var(--ocre); }
+.nav-tab.active {
+  color: var(--ocre);
+  border-bottom-color: var(--ocre);
+}
 
-/* HEADER */
-.oteraud-bar { background: var(--noir); color: var(--creme); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 2rem; }
-header { background: var(--teal); color: #fff; padding: 0.75rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 4px solid var(--ocre); }
-.header-logo-block { display: flex; align-items: center; gap: 0.85rem; }
-.header-logo { height: 32px; width: auto; display: block; flex-shrink: 0; }
-.header-logo-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); flex-shrink: 0; }
-.header-left h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
-.header-left p  { font-size: 0.68rem; font-weight: 500; opacity: 0.8; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.07em; }
-.header-badge { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; padding: 5px 14px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
-
-/* PAGES */
-.page { display: none; }
+/* ══ PAGES ══ */
+.page { display: none; flex: 1; }
 .page.active { display: block; }
 
-/* ACCUEIL */
-.accueil-wrap { padding: 2rem; max-width: 1000px; margin: 0 auto; }
-.accueil-intro { margin-bottom: 2rem; }
-.accueil-intro h2 { font-size: 1.05rem; font-weight: 700; color: var(--teal); margin-bottom: 0.9rem; }
-.accueil-intro p { font-size: 0.88rem; line-height: 1.75; color: #444; margin-bottom: 0.6rem; }
-.accueil-intro strong { color: var(--terre); font-weight: 600; }
-.accueil-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-.accueil-card { background: #fff; border: 1.5px solid var(--creme); border-radius: 12px; padding: 1.4rem 1.25rem 1.2rem; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s; display: flex; flex-direction: column; gap: 0.5rem; }
-.accueil-card:hover { border-color: var(--teal); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(98,135,139,0.13); }
-.accueil-card h3 { font-size: 0.88rem; font-weight: 700; color: var(--noir); }
-.accueil-card p { font-size: 0.78rem; line-height: 1.6; color: #666; flex: 1; }
-.accueil-card-link { font-size: 0.72rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 0.5rem; }
-.accueil-tableau-btn { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1.5px solid var(--creme); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.accueil-tableau-btn p { font-size: 0.82rem; color: #666; line-height: 1.6; flex: 1; }
-.btn-tableau { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--teal); color: #fff; border: none; border-radius: 8px; padding: 0.65rem 1.4rem; font-family: var(--font); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; white-space: nowrap; transition: background 0.15s, transform 0.12s; }
-.btn-tableau:hover { background: #4e6e71; transform: translateY(-1px); }
+/* ══ PANNEAU DE SÉLECTION ══ */
+.selection-panel {
+  background: #fff;
+  border-bottom: 2px solid var(--creme);
+  padding: 1.1rem 2rem;
+  display: flex;
+  justify-content: center;
+}
+.selection-panel-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  max-width: 960px;
+  width: 100%;
+}
+.sel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sel-group label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--teal);
+}
+select, input[type="date"] {
+  border: 1.5px solid var(--creme);
+  background: var(--creme-light);
+  color: var(--noir);
+  border-radius: 6px;
+  padding: 7px 11px;
+  font-size: 0.82rem;
+  font-family: var(--font);
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 175px;
+}
+select:focus, input[type="date"]:focus {
+  border-color: var(--teal);
+  background: #fff;
+}
+.sel-dates {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.sel-dates span {
+  font-size: 0.75rem;
+  color: #999;
+  font-weight: 500;
+}
+.btn-period {
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-family: var(--font);
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid var(--creme);
+  background: var(--creme-light);
+  color: var(--noir);
+  letter-spacing: 0.04em;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.btn-period:hover,
+.btn-period.active {
+  background: var(--teal-light);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.btn-charger {
+  padding: 9px 22px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-family: var(--font);
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: var(--teal);
+  color: #fff;
+  letter-spacing: 0.04em;
+  transition: background 0.15s, transform 0.1s;
+  align-self: flex-end;
+  white-space: nowrap;
+}
+.btn-charger:hover {
+  background: #4e6e71;
+  transform: translateY(-1px);
+}
+.btn-charger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
 
-/* STATS */
-.stats { padding: 0.85rem 2rem; background: var(--ocre-light); border-bottom: 1px solid #f0d9a0; display: flex; flex-wrap: wrap; gap: 2rem; align-items: center; }
+/* ══ BARRE D'ÉTAT (après chargement) ══ */
+.status-bar {
+  background: var(--ocre-light);
+  border-bottom: 1px solid #f0d9a0;
+  padding: 0.6rem 2rem;
+  display: none;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+  align-items: center;
+}
+.status-bar.visible { display: flex; }
 .stat { display: flex; flex-direction: column; gap: 2px; }
-.stat-val { font-size: 1.05rem; font-weight: 700; color: var(--terre); letter-spacing: -0.02em; }
-.stat-lbl { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #9a7040; }
-.stat-divider { width: 1px; height: 30px; background: #e8c97a; }
+.stat-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--terre);
+  letter-spacing: -0.02em;
+}
+.stat-lbl {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9a7040;
+}
+.stat-divider {
+  width: 1px;
+  height: 30px;
+  background: #e8c97a;
+}
 
-/* CHARTS */
-.charts-page { padding: 1.5rem 2rem 2rem; display: flex; flex-direction: column; gap: 2rem; }
-.chart-card { background: #fff; border-radius: 12px; border: 1px solid var(--creme); padding: 1.5rem; }
-.chart-card h2 { font-size: 0.85rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.25rem; }
-.chart-card p.chart-desc { font-size: 0.72rem; color: #888; font-weight: 500; margin-bottom: 1.25rem; }
-.chart-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; align-items: center; }
-.chart-controls label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--teal); }
-.chart-controls select { min-width: 130px; padding: 6px 10px; font-size: 0.78rem; border: 1.5px solid var(--creme); background: var(--creme-light); border-radius: 6px; font-family: var(--font); font-weight: 500; outline: none; }
-.chart-controls select:focus { border-color: var(--teal); }
-.chart-wrap { position: relative; width: 100%; }
+/* ══ PAGE ACCUEIL ══ */
+.accueil-wrap {
+  padding: 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.accueil-intro {
+  margin-bottom: 2rem;
+}
+.accueil-intro h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 0.85rem;
+}
+.accueil-intro p {
+  font-size: 0.88rem;
+  line-height: 1.75;
+  color: #444;
+  margin-bottom: 0.55rem;
+}
+.accueil-intro strong { color: var(--terre); font-weight: 600; }
+.accueil-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.accueil-card {
+  background: #fff;
+  border: 1.5px solid var(--creme);
+  border-radius: 12px;
+  padding: 1.4rem 1.25rem 1.2rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.accueil-card:hover {
+  border-color: var(--teal);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(98,135,139,0.13);
+}
+.accueil-card-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.2rem;
+}
+.accueil-card h3 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--noir);
+}
+.accueil-card p {
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: #666;
+  flex: 1;
+}
+.accueil-card-link {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-top: 0.5rem;
+}
+.accueil-card:hover .accueil-card-link { color: var(--terre); }
 
-/* TABLE */
-.filters { background: #fff; border-bottom: 1px solid var(--creme); padding: 1rem 2rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
-.filter-group { display: flex; flex-direction: column; gap: 5px; }
-.filter-group label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--teal); }
-select, input[type=text] { border: 1.5px solid var(--creme); background: var(--creme-light); color: var(--noir); border-radius: 6px; padding: 7px 11px; font-size: 0.82rem; font-family: var(--font); font-weight: 500; min-width: 140px; outline: none; }
-select:focus, input:focus { border-color: var(--teal); background: #fff; }
-button { padding: 8px 16px; border-radius: 6px; font-size: 0.75rem; font-family: var(--font); font-weight: 600; cursor: pointer; border: 1.5px solid var(--creme); background: #fff; color: var(--noir); transition: background 0.12s; }
-button:hover { background: var(--creme-light); }
-.table-wrap { padding: 1.5rem 2rem; overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid var(--creme); font-size: 0.83rem; }
-thead { background: var(--teal); }
-th { padding: 11px 15px; text-align: left; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: rgba(255,255,255,0.9); cursor: pointer; user-select: none; white-space: nowrap; }
-th:hover { background: rgba(255,255,255,0.1); }
-th.active { color: var(--ocre); }
-th .sort-arrow { opacity: 0.5; margin-left: 5px; font-size: 0.62rem; }
-th.active .sort-arrow { opacity: 1; color: var(--ocre); }
-td { padding: 10px 15px; border-bottom: 1px solid var(--creme-light); vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--creme-light); }
-.td-date { font-weight: 500; color: var(--teal); }
-.mw-cell { font-weight: 600; text-align: right; color: var(--terre); }
-.pagination { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 2rem 1rem; flex-wrap: wrap; gap: 0.75rem; }
-.pagination .info { font-size: 0.72rem; color: #777; font-weight: 500; }
-.pag-controls { display: flex; gap: 5px; flex-wrap: wrap; }
-.pag-controls button { padding: 5px 11px; font-size: 0.72rem; min-width: 34px; }
-.pag-controls button.active { background: var(--teal); color: #fff; border-color: var(--teal); }
-.pag-controls button:disabled { opacity: 0.35; cursor: default; }
-.pag-ellipsis { padding: 5px 3px; font-size: 0.72rem; color: #999; display: flex; align-items: center; }
-mark.hl { background: #fde68a; border-radius: 2px; padding: 0 1px; }
+.accueil-tableau-btn {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1.5px solid var(--creme);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.accueil-tableau-btn p {
+  font-size: 0.82rem;
+  color: #666;
+  line-height: 1.6;
+  flex: 1;
+  margin-bottom: 0 !important;
+}
+.btn-tableau {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.4rem;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.12s;
+  flex-shrink: 0;
+}
+.btn-tableau:hover { background: #4e6e71; transform: translateY(-1px); }
+.variables-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.var-chip {
+  background: var(--teal-light);
+  color: #3a5c5f;
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
 
-/* DOWNLOAD */
-.download-bar { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 2rem 1rem; flex-wrap: wrap; gap: 0.75rem; border-top: 1px solid var(--creme); background: var(--creme-light); }
-.download-label { font-size: 0.72rem; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.07em; }
-.download-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-.btn-dl { display: inline-flex; align-items: center; gap: 0.4rem; padding: 6px 14px; border-radius: 6px; font-family: var(--font); font-size: 0.75rem; font-weight: 700; cursor: pointer; border: 1.5px solid; transition: background 0.12s, transform 0.1s; letter-spacing: 0.03em; }
-.btn-dl:hover { transform: translateY(-1px); }
-.btn-dl-csv { background: #fff; color: var(--teal); border-color: var(--teal); }
-.btn-dl-csv:hover { background: var(--teal-light); }
-.btn-dl-pdf { background: #fff; color: var(--terre); border-color: var(--terre); }
-.btn-dl-pdf:hover { background: #f9ece3; }
-.dl-sep { font-size: 0.68rem; color: #bbb; }
+/* ══ PAGE GRAPHIQUE / TABLEAU / CARTE — placeholder ══ */
+.page-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: #aaa;
+  gap: 0.75rem;
+  text-align: center;
+}
+.page-placeholder .ph-icon { font-size: 2.5rem; opacity: 0.4; }
+.page-placeholder p {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #bbb;
+  max-width: 320px;
+  line-height: 1.6;
+}
 
-/* FOOTER */
-footer { text-align: center; padding: 1.25rem 2rem; border-top: 1px solid var(--creme); }
-footer .footer-source { font-size: 0.68rem; font-weight: 600; color: var(--teal); margin-bottom: 4px; }
-footer .footer-source a { color: var(--teal); text-decoration: underline; text-underline-offset: 2px; }
-footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.06em; color: var(--beige); text-transform: uppercase; }
+/* ══ FOOTER ══ */
+footer {
+  margin-top: auto;
+  background: var(--noir);
+  border-top: 3px solid var(--ocre);
+  padding: 1rem 2rem;
+  text-align: center;
+}
+footer .footer-source {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 4px;
+}
+footer .footer-source a {
+  color: var(--teal-light);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+footer .footer-credits {
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+}
 
+/* ══ RESPONSIVE ══ */
 @media (max-width: 640px) {
-  header, .filters, .stats, .table-wrap, .pagination, .charts-page, .accueil-wrap { padding-left: 1rem; padding-right: 1rem; }
+  header, .selection-panel, .status-bar, .accueil-wrap { padding-left: 1rem; padding-right: 1rem; }
   header { flex-direction: column; align-items: flex-start; }
-  .stat-divider { display: none; }
-  .app-nav { padding: 0 1rem; }
+  .app-nav { padding: 0 1rem; overflow-x: auto; }
   .accueil-cards { grid-template-columns: 1fr; }
+  .stat-divider { display: none; }
+}
+
+/* ══ LOGO OTERAUD ══ */
+.header-logo {
+  height: 34px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
 }
 </style>
 </head>
 <body>
 
+<!-- ══ BANDEAU OTERAUD ══ -->
+<div class="oteraud-bar">
+  OTERAUD — Observatoire des territoires &nbsp;·&nbsp;
+  <a href="index.html">← Retour au portail</a>
+</div>
 
-
-    
-<div class="oteraud-bar">OTERAUD — Observatoire des territoires &nbsp;·&nbsp; <a href="index.html" style="color:var(--creme);text-decoration:underline;text-underline-offset:2px;font-weight:600;">← Retour au portail</a></div>
-
+<!-- ══ HEADER ══ -->
 <header>
   <div class="header-logo-block">
     <a href="https://www.uqac.ca/oteraud/" target="_blank" rel="noopener" title="Site web de l'OTERAUD">
@@ -149,513 +465,319 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
     </a>
     <div class="header-logo-divider"></div>
     <div class="header-left">
-      <h1>Demande d'électricité au Québec</h1>
-      <p>Données horaires · Hydro-Québec · 2019–2024</p>
+      <h1>Données météorologiques historiques</h1>
+      <p>59 stations · Québec · 1995 à aujourd'hui · Hydro-Québec</p>
     </div>
   </div>
-  <span class="header-badge" id="total-badge">43 824 entrées</span>
+  <span class="header-badge" id="header-badge">7 variables · Horaire</span>
 </header>
 
-<div id="loader-bar" style="background:var(--ocre-light);border-bottom:1px solid #f0d9a0;padding:8px 2rem;display:flex;align-items:center;gap:0.75rem;">
-  <div style="width:18px;height:18px;border:3px solid rgba(98,135,139,0.3);border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></div>
-  <span id="loader-msg-bar" style="font-family:var(--font);font-size:0.78rem;font-weight:600;color:var(--terre);"></span>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<!-- ══ NAVIGATION ══ -->
 <nav class="app-nav">
   <div class="nav-tab active" onclick="showPage('accueil')">Accueil</div>
-  <div class="nav-tab" onclick="showPage('evolution')">Évolution temporelle</div>
-  <div class="nav-tab" onclick="showPage('pointe')">Analyse de pointe</div>
+  <div class="nav-tab" onclick="showPage('graphique')">Graphique</div>
+  <div class="nav-tab" onclick="showPage('carte')">Carte</div>
+  <div class="nav-tab" onclick="showPage('tableau')">Tableau</div>
 </nav>
 
-<!-- ACCUEIL -->
+<!-- ══ PANNEAU DE SÉLECTION (persistant) ══ -->
+<div class="selection-panel" id="selection-panel">
+<div class="selection-panel-inner">
+  <div class="sel-group">
+    <label>Station</label>
+    <select id="sel-station">
+      <option value="">— Choisir une station —</option>
+      <option>BAGOTVILLE</option>
+      <option>BAIE COMEAU</option>
+      <option>BEAUCEVILLE</option>
+      <option>BONNARD</option>
+      <option>CAP CHAT</option>
+      <option>CAP D'ESPOIR</option>
+      <option>CAP MADELEINE</option>
+      <option>CAP TOURMENTE</option>
+      <option>CHIBOUGAMAU-CHAPAIS</option>
+      <option>FRELIGHSBURG</option>
+      <option>GASPE</option>
+      <option>HAVRE ST-PIERRE</option>
+      <option>ILE AUX PERROQUETS</option>
+      <option>ILE BICQUETTE</option>
+      <option>ILE D'ORLEANS</option>
+      <option>ILE ROUGE</option>
+      <option>ILES DE LA MADELEINE (AU8)</option>
+      <option>JONQUIERE</option>
+      <option>KUUJJUARAPIK</option>
+      <option>L'ACADIE</option>
+      <option>L'ASSOMPTION</option>
+      <option>LA GRANDE IV</option>
+      <option>LA GRANDE RIVIERE</option>
+      <option>LA TUQUE</option>
+      <option>LAC EON</option>
+      <option>LEMIEUX</option>
+      <option>MANIWAKI</option>
+      <option>MATAGAMI</option>
+      <option>MCTAVISH</option>
+      <option>MIRABEL</option>
+      <option>MISTOOK</option>
+      <option>MONT JOLI</option>
+      <option>MONT ORFORD</option>
+      <option>MONTREAL (DORVAL)</option>
+      <option>NATASHQUAN</option>
+      <option>NEW CARLISLE</option>
+      <option>NICOLET</option>
+      <option>NORMANDIN</option>
+      <option>OTTAWA</option>
+      <option>PARENT</option>
+      <option>POINT CLAVEAU</option>
+      <option>POINTE DES MONTS</option>
+      <option>QUEBEC</option>
+      <option>RIVIERE DU LOUP</option>
+      <option>ROBERVAL</option>
+      <option>ROQUEMAURE</option>
+      <option>ROUYN</option>
+      <option>ROUYN (AU7)</option>
+      <option>SCHEFFERVILLE</option>
+      <option>SEPT-ILES</option>
+      <option>SHERBROOKE</option>
+      <option>ST-ANICET</option>
+      <option>ST-HUBERT</option>
+      <option>ST-JOVITE</option>
+      <option>STE-ANNE-DE-BELLEVUE</option>
+      <option>STE-CLOTHILDE</option>
+      <option>TROIS RIVIERES</option>
+      <option>VAL D'OR</option>
+      <option>VALCARTIER</option>
+    </select>
+  </div>
+
+  <div class="sel-group">
+    <label>Variable</label>
+    <select id="sel-variable">
+      <option value="t">Température sèche (°C)</option>
+      <option value="tf">Température humide (°C)</option>
+      <option value="hr">Humidité relative (%)</option>
+      <option value="pa">Pression atmosphérique (hPa)</option>
+      <option value="rs">Rayonnement solaire (kJ/m²/h)</option>
+      <option value="vv">Vitesse du vent (km/h)</option>
+      <option value="dv">Direction du vent (°)</option>
+    </select>
+  </div>
+
+  <div class="sel-group">
+    <label>Période rapide</label>
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+      <button class="btn-period active" onclick="setPeriod(7, this)">7 j</button>
+      <button class="btn-period" onclick="setPeriod(30, this)">30 j</button>
+      <button class="btn-period" onclick="setPeriod(90, this)">3 mois</button>
+      <button class="btn-period" onclick="setPeriod(365, this)">1 an</button>
+      <button class="btn-period" onclick="setPeriod(0, this)">Perso.</button>
+    </div>
+  </div>
+
+  <div class="sel-group" id="custom-dates" style="display:none;">
+    <label>Du / Au</label>
+    <div class="sel-dates">
+      <input type="date" id="date-debut">
+      <span>→</span>
+      <input type="date" id="date-fin">
+    </div>
+  </div>
+
+  <div class="sel-group" style="justify-content:flex-end;">
+    <label>&nbsp;</label>
+    <button class="btn-charger" id="btn-charger" onclick="chargerDonnees()">
+      ⬇ Charger les données
+    </button>
+  </div>
+
+</div>
+</div>
+
+<!-- ══ BARRE D'ÉTAT ══ -->
+<div class="status-bar" id="status-bar">
+  <div class="stat">
+    <span class="stat-val" id="s-station">—</span>
+    <span class="stat-lbl">Station</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat">
+    <span class="stat-val" id="s-periode">—</span>
+    <span class="stat-lbl">Période</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat">
+    <span class="stat-val" id="s-enregistrements">—</span>
+    <span class="stat-lbl">Enregistrements</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat">
+    <span class="stat-val" id="s-min">—</span>
+    <span class="stat-lbl">Min</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat">
+    <span class="stat-val" id="s-moy">—</span>
+    <span class="stat-lbl">Moyenne</span>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat">
+    <span class="stat-val" id="s-max">—</span>
+    <span class="stat-lbl">Max</span>
+  </div>
+</div>
+
+<!-- ══════════ PAGE ACCUEIL ══════════ -->
 <div class="page active" id="page-accueil">
   <div class="accueil-wrap">
+
     <div class="accueil-intro">
-      <h2>Bienvenue dans l'outil de consultation</h2>
-      <p>Cette application permet d'explorer l'historique de la <strong>demande d'électricité au Québec en mégawatts (MW)</strong>, mesurée heure par heure par le Centre de conduite du réseau d'Hydro-Québec.</p>
-      <p>Les données couvrent la période de <strong>2019 à 2024</strong> et comprennent <strong>43 824 mesures horaires</strong>. Elles permettent d'observer les pointes de consommation hivernales, les creux estivaux et les variations journalières.</p>
-      <p>Utilisez les onglets de navigation ou cliquez sur une section ci-dessous pour commencer votre exploration.</p>
+      <h2>Explorer les données météorologiques historiques du Québec recueillies par Hydro-Québec</h2>
+      <p>Cette application donne accès aux données météorologiques horaires issues de <strong>59 stations d'Environnement Canada</strong> situées au Québec, diffusées en données ouvertes par Hydro-Québec. Les données couvrent la période de <strong>1995 à aujourd'hui</strong>.</p>
+      <p>Pour commencer, <strong>sélectionnez une station, une variable et une période</strong> dans le panneau ci-dessus, puis cliquez sur <em>Charger les données</em>. Naviguez ensuite entre les onglets pour visualiser les résultats sous différentes formes.</p>
     </div>
+
     <div class="accueil-cards">
-      <div class="accueil-card" onclick="showPage('evolution')">
-        <h3>Évolution temporelle</h3>
-        <p>Suivez l'évolution de la demande heure par heure, jour par jour, mois par mois ou année par année.</p>
-        <span class="accueil-card-link">Voir l'évolution →</span>
+      <div class="accueil-card" onclick="showPage('graphique')">
+        <h3>Graphique</h3>
+        <p>Visualisez l'évolution d'une variable météo dans le temps pour la station sélectionnée.</p>
+        <span class="accueil-card-link">Voir le graphique →</span>
       </div>
-      <div class="accueil-card" onclick="showPage('pointe')">
-        <h3>Analyse de pointe</h3>
-        <p>Identifiez les heures et les mois de forte demande, comparez les années entre elles.</p>
-        <span class="accueil-card-link">Voir les pointes →</span>
+      <div class="accueil-card" onclick="showPage('carte')">
+        <h3>Carte</h3>
+        <p>Localisez les 59 stations sur une carte et visualisez la valeur moyenne de la variable choisie par station.</p>
+        <span class="accueil-card-link">Voir la carte →</span>
       </div>
-          </div>
+    </div>
+
     <div class="accueil-tableau-btn">
-      <p>Accédez à l'ensemble des données brutes : filtrez par année, mois et heure, et triez les colonnes selon vos besoins.</p>
+      <p>Consultez les données brutes heure par heure : filtrez par date, triez les colonnes et téléchargez les résultats en format CSV.</p>
       <button class="btn-tableau" onclick="showPage('tableau')">⊞ Accès au tableau de données</button>
     </div>
+
+    <div class="accueil-tableau-btn">
+      <p>Données météorologiques horaires provenant de <strong>59 stations</strong> d'Environnement Canada au Québec, traitées et diffusées par Hydro-Québec. Variables disponibles : <span class="variables-grid" style="display:inline-flex; margin-top:0.4rem;"><span class="var-chip">Temp. sèche</span> <span class="var-chip">Temp. humide</span> <span class="var-chip">Humidité</span> <span class="var-chip">Pression</span> <span class="var-chip">Rayonnement</span> <span class="var-chip">Vent</span></span></p>
+      <a href="https://donnees.hydroquebec.com/explore/dataset/historique-donnees-meteo/" target="_blank" rel="noopener" class="btn-tableau">Source HQ →</a>
+    </div>
+
   </div>
 </div>
 
-<!-- ÉVOLUTION TEMPORELLE -->
-<div class="page" id="page-evolution">
-  <div class="charts-page">
-    <div class="chart-card">
-      <h2>Évolution de la demande d'électricité</h2>
-      <p class="chart-desc">Demande moyenne en MW selon la granularité choisie. Survolez la courbe pour voir les valeurs précises.</p>
-      <div class="chart-controls">
-        <label>Granularité</label>
-        <select id="evo-gran" onchange="buildEvo()">
-          <option value="hour">Horaire</option>
-          <option value="day">Journalière</option>
-          <option value="month" selected>Mensuelle</option>
-          <option value="year">Annuelle</option>
-        </select>
-        <label style="margin-left:1rem">Année</label>
-        <select id="evo-annee" onchange="buildEvo()"><option value="">Toutes</option></select>
-      </div>
-      <div class="chart-wrap" style="height:400px"><canvas id="chart-evo"></canvas></div>
-    </div>
+<!-- ══════════ PAGE GRAPHIQUE ══════════ -->
+<div class="page" id="page-graphique">
+  <div class="page-placeholder">
+    <div class="ph-icon">📈</div>
+    <p>Sélectionnez une station et une période dans le panneau ci-dessus, puis cliquez sur <strong>Charger les données</strong> pour afficher le graphique.</p>
   </div>
 </div>
 
-<!-- ANALYSE DE POINTE -->
-<div class="page" id="page-pointe">
-  <div class="charts-page">
-    <div class="chart-card">
-      <h2>Demande maximale par mois</h2>
-      <p class="chart-desc">Pic de demande mensuel (MW) — identifie les périodes de forte sollicitation du réseau.</p>
-      <div class="chart-controls">
-        <label>Année</label>
-        <select id="pointe-annee" onchange="buildPointe()"><option value="">Toutes</option></select>
-      </div>
-      <div class="chart-wrap" style="height:320px"><canvas id="chart-pointe"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <h2>Profil journalier moyen</h2>
-      <p class="chart-desc">Demande moyenne par heure de la journée — révèle les patterns de consommation quotidiens.</p>
-      <div class="chart-controls">
-        <label>Année</label>
-        <select id="profil-annee" onchange="buildProfil()"><option value="">Toutes</option></select>
-        <label style="margin-left:1rem">Mois</label>
-        <select id="profil-mois" onchange="buildProfil()">
-          <option value="">Tous</option>
-          <option value="1">Janvier</option><option value="2">Février</option>
-          <option value="3">Mars</option><option value="4">Avril</option>
-          <option value="5">Mai</option><option value="6">Juin</option>
-          <option value="7">Juillet</option><option value="8">Août</option>
-          <option value="9">Septembre</option><option value="10">Octobre</option>
-          <option value="11">Novembre</option><option value="12">Décembre</option>
-        </select>
-      </div>
-      <div class="chart-wrap" style="height:320px"><canvas id="chart-profil"></canvas></div>
-    </div>
+<!-- ══════════ PAGE CARTE ══════════ -->
+<div class="page" id="page-carte">
+  <div class="page-placeholder">
+    <div class="ph-icon">🗺️</div>
+    <p>Chargez des données pour afficher les stations sur la carte et visualiser les valeurs moyennes par localisation.</p>
   </div>
 </div>
 
-<!-- TABLEAU -->
+<!-- ══════════ PAGE TABLEAU ══════════ -->
 <div class="page" id="page-tableau">
-  <div class="filters">
-    <div class="filter-group">
-      <label>Recherche</label>
-      <input type="text" id="search" placeholder="Date, heure…" style="min-width:180px">
-    </div>
-    <div class="filter-group">
-      <label>Année</label>
-      <select id="fil-annee"><option value="">Toutes</option></select>
-    </div>
-    <div class="filter-group">
-      <label>Mois</label>
-      <select id="fil-mois">
-        <option value="">Tous</option>
-        <option value="01">Janvier</option><option value="02">Février</option>
-        <option value="03">Mars</option><option value="04">Avril</option>
-        <option value="05">Mai</option><option value="06">Juin</option>
-        <option value="07">Juillet</option><option value="08">Août</option>
-        <option value="09">Septembre</option><option value="10">Octobre</option>
-        <option value="11">Novembre</option><option value="12">Décembre</option>
-      </select>
-    </div>
-    <div class="filter-group" style="justify-content:flex-end">
-      <label>&nbsp;</label>
-      <button onclick="resetFilters()">Réinitialiser</button>
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat"><span class="stat-val" id="s-count">—</span><span class="stat-lbl">Entrées filtrées</span></div>
-    <div class="stat-divider"></div>
-    <div class="stat"><span class="stat-val" id="s-moy">—</span><span class="stat-lbl">Demande moy. (MW)</span></div>
-    <div class="stat-divider"></div>
-    <div class="stat"><span class="stat-val" id="s-max">—</span><span class="stat-lbl">Demande max. (MW)</span></div>
-    <div class="stat-divider"></div>
-    <div class="stat"><span class="stat-val" id="s-min">—</span><span class="stat-lbl">Demande min. (MW)</span></div>
-  </div>
-  <div class="download-bar">
-    <span class="download-label">Télécharger les données</span>
-    <div class="download-btns">
-      <button class="btn-dl btn-dl-csv" onclick="dlCSV(false)">⬇ CSV — données filtrées</button>
-      <button class="btn-dl btn-dl-csv" onclick="dlCSV(true)">⬇ CSV — toutes les données</button>
-      <span class="dl-sep">|</span>
-      <button class="btn-dl btn-dl-pdf" onclick="dlPDF(false)">⬇ PDF — données filtrées</button>
-      <button class="btn-dl btn-dl-pdf" onclick="dlPDF(true)">⬇ PDF — toutes les données</button>
-    </div>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr>
-        <th onclick="sortBy('date')" id="th-date">Date et heure <span class="sort-arrow">↕</span></th>
-        <th onclick="sortBy('annee')" id="th-annee">Année <span class="sort-arrow">↕</span></th>
-        <th onclick="sortBy('mw')" id="th-mw" style="text-align:right">Demande (MW) <span class="sort-arrow">↕</span></th>
-      </tr></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-  <div class="pagination">
-    <span class="info" id="pag-info"></span>
-    <div class="pag-controls" id="pag-controls"></div>
+  <div class="page-placeholder">
+    <div class="ph-icon">⊞</div>
+    <p>Chargez des données pour consulter les enregistrements horaires dans le tableau et les télécharger en CSV.</p>
   </div>
 </div>
 
+<!-- ══ FOOTER ══ -->
 <footer>
-  <p class="footer-source">Source des données : <a href="https://donnees.hydroquebec.com/explore/dataset/historique-demande-electricite-quebec/information/" target="_blank">Hydro-Québec — Données ouvertes</a> · Historique de la demande d'électricité au Québec</p>
-  <p class="footer-credits">OTERAUD · 2026 · Codage assisté par Claude (Anthropic)</p>
+  <p class="footer-source">
+    Source des données :
+    <a href="https://donnees.hydroquebec.com/pages/accueil/" target="_blank" rel="noopener">
+      Hydro-Québec — Portail de données ouvertes
+    </a>
+  </p>
+  <p class="footer-credits">OTERAUD &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; Codage assisté par Claude (Anthropic)</p>
 </footer>
 
 <script>
-/* ══ CHARGEMENT DES DONNÉES ══ */
-let ALL_DATA = [];
-
-function debounce(fn, delay) {
-  let timer;
-  return function(...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
-}
-
-function showLoader(msg) {
-  document.getElementById('loader-msg-bar').textContent = msg;
-  document.getElementById('loader-bar').style.display = 'flex';
-}
-function hideLoader() {
-  document.getElementById('loader-bar').style.display = 'none';
-}
-
-async function chargerDonnees() {
-  showLoader('Connexion au serveur OTERAUD…');
-  try {
-    showLoader('Chargement des données Hydro-Québec…');
-    const res = await fetch('/api/demande-electricite');
-    if (!res.ok) throw new Error('Erreur serveur (' + res.status + ')');
-
-    showLoader('Traitement des données…');
-    const text = await res.text();
-    ALL_DATA = JSON.parse(text);
-
-    if (!Array.isArray(ALL_DATA) || ALL_DATA.length === 0)
-      throw new Error('Aucune donnée reçue');
-
-    const cached = res.headers.get('X-Cache') === 'HIT';
-    console.log('Données chargées:', ALL_DATA.length, 'entrées', cached ? '(cache serveur)' : '(API fraîche)');
-
-    hideLoader();
-    initSelects();
-    applyFilters();
-    document.getElementById('total-badge').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' entrées';
-
-  } catch (err) {
-    document.getElementById('loader-msg-bar').textContent = '⚠ Erreur : ' + err.message + ' — Vérifiez que le site est hébergé sur Netlify.';
-    console.error(err);
-  }
-}
-
-const fmtMW = v => Math.round(v).toLocaleString('fr-CA') + ' MW';
-const fmtMWn = v => Math.round(v).toLocaleString('fr-CA');
-const MOIS_NOMS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-
-Chart.defaults.font.family = "'Montserrat', sans-serif";
-Chart.defaults.font.size = 11;
-Chart.defaults.color = '#555';
-
-/* ── Init selects ── */
-function initSelects() {
-  const annees = [...new Set(ALL_DATA.map(d=>d.annee))].sort();
-  ['evo-annee','pointe-annee','profil-annee','fil-annee'].forEach(id => {
-    const s = document.getElementById(id);
-    if(!s) return;
-    const cur = s.value;
-    // Keep existing options (Tous/Toutes) and add years
-    while(s.options.length > 1) s.remove(1);
-    annees.forEach(a => { const o=document.createElement('option'); o.value=o.textContent=a; s.appendChild(o); });
-    s.value = cur;
-  });
-}
-
-/* ── Charts ── */
-let chartEvo=null, chartPointe=null, chartProfil=null;
-
-function buildEvo() {
-  const gran  = document.getElementById('evo-gran').value;
-  const annee = document.getElementById('evo-annee').value;
-  let d = ALL_DATA;
-  if(annee) d = d.filter(x=>x.annee==annee);
-
-  const grouped = {};
-  d.forEach(x => {
-    let key;
-    if(gran==='hour')  key = x.date.substring(0,13);
-    else if(gran==='day')   key = x.jour;
-    else if(gran==='month') key = x.mois;
-    else key = String(x.annee);
-    if(!grouped[key]) grouped[key]={sum:0,count:0};
-    grouped[key].sum += x.mw;
-    grouped[key].count++;
-  });
-
-  const keys   = Object.keys(grouped).sort();
-  const values = keys.map(k=>grouped[k].sum/grouped[k].count);
-  const labels = keys.map(k => {
-    if(gran==='month') {
-      const [y,m] = k.split('-');
-      return new Date(+y,+m-1,1).toLocaleDateString('fr-CA',{month:'short',year:'2-digit'});
+// ══ NAVIGATION ══
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  tabs.forEach(t => {
+    if (t.textContent.toLowerCase().includes(id === 'accueil' ? 'accueil'
+        : id === 'graphique' ? 'graphique'
+        : id === 'carte' ? 'carte'
+        : 'tableau')) {
+      t.classList.add('active');
     }
-    if(gran==='year') return k;
-    if(gran==='day') return new Date(k).toLocaleDateString('fr-CA',{day:'numeric',month:'short',year:'2-digit'});
-    return k.substring(11,13)+'h ' + new Date(k+':00').toLocaleDateString('fr-CA',{day:'numeric',month:'short'});
   });
+}
 
-  if(chartEvo) {
-    chartEvo.data.labels = labels;
-    chartEvo.data.datasets[0].data = values;
-    chartEvo.update('active');
+// ══ RACCOURCIS PÉRIODE ══
+let activePeriodDays = 7;
+
+function setPeriod(days, btn) {
+  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activePeriodDays = days;
+  const customDates = document.getElementById('custom-dates');
+  if (days === 0) {
+    customDates.style.display = 'flex';
   } else {
-    chartEvo = new Chart(document.getElementById('chart-evo'), {
-      type:'line',
-      data:{ labels, datasets:[{ label:'Demande (MW)', data:values, borderColor:'#62878b', backgroundColor:'#62878b22', borderWidth:2, pointRadius:gran==='year'?5:1, pointHoverRadius:5, fill:true, tension:0.3 }]},
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+Math.round(ctx.parsed.y).toLocaleString('fr-CA')+' MW'}}},
-        scales:{ x:{grid:{color:'#ede8df'}, ticks:{maxTicksLimit:20, maxRotation:45, font:{size:10}}}, y:{grid:{color:'#ede8df'}, ticks:{callback:v=>v.toLocaleString('fr-CA')+' MW'}} }
-      }
+    customDates.style.display = 'none';
+    // Pré-remplir les dates pour affichage informatif
+    const fin = new Date();
+    const debut = new Date();
+    debut.setDate(fin.getDate() - days);
+    document.getElementById('date-fin').value = fin.toISOString().split('T')[0];
+    document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+  }
+}
+
+// Initialiser les dates par défaut (7 jours)
+(function initDates() {
+  const fin = new Date();
+  const debut = new Date();
+  debut.setDate(fin.getDate() - 7);
+  document.getElementById('date-fin').value = fin.toISOString().split('T')[0];
+  document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+})();
+
+// ══ CHARGEMENT DES DONNÉES (stub — sera branché à l'API à l'étape 2) ══
+function chargerDonnees() {
+  const station = document.getElementById('sel-station').value;
+  if (!station) {
+    alert('Veuillez choisir une station.');
+    return;
+  }
+  const btn = document.getElementById('btn-charger');
+  btn.disabled = true;
+  btn.textContent = '⏳ Chargement…';
+
+  // Simulation — sera remplacé par l'appel API réel à l'étape 2
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = '⬇ Charger les données';
+
+    // Afficher la barre d'état
+    const dateDebut = document.getElementById('date-debut').value;
+    const dateFin   = document.getElementById('date-fin').value;
+    document.getElementById('s-station').textContent = station;
+    document.getElementById('s-periode').textContent = dateDebut + ' → ' + dateFin;
+    document.getElementById('s-enregistrements').textContent = '—';
+    document.getElementById('s-min').textContent = '—';
+    document.getElementById('s-moy').textContent = '—';
+    document.getElementById('s-max').textContent = '—';
+    document.getElementById('status-bar').classList.add('visible');
+
+    // Afficher message dans les pages contenu
+    ['graphique', 'carte', 'tableau'].forEach(id => {
+      const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
+      if (ph) ph.innerHTML = 'Connexion à l\'API prête. <strong>Étape 2</strong> : branchement des données réelles.';
     });
-  }
+  }, 800);
 }
-
-function buildPointe() {
-  const annee = document.getElementById('pointe-annee').value;
-  let d = ALL_DATA;
-  if(annee) d = d.filter(x=>x.annee==annee);
-
-  const byMois = {};
-  d.forEach(x => {
-    const key = x.mois;
-    if(!byMois[key] || x.mw > byMois[key]) byMois[key] = x.mw;
-  });
-
-  const keys   = Object.keys(byMois).sort();
-  const values = keys.map(k=>byMois[k]);
-  const labels = keys.map(k => {
-    const [y,m] = k.split('-');
-    return new Date(+y,+m-1,1).toLocaleDateString('fr-CA',{month:'short',year:'2-digit'});
-  });
-  const colors = values.map(v => v > 35000 ? '#a45a37' : v > 28000 ? '#f59e19' : '#62878b');
-
-  if(chartPointe) {
-    chartPointe.data.labels = labels;
-    chartPointe.data.datasets[0].data = values;
-    chartPointe.data.datasets[0].backgroundColor = colors;
-    chartPointe.update('active');
-  } else {
-    chartPointe = new Chart(document.getElementById('chart-pointe'), {
-      type:'bar',
-      data:{ labels, datasets:[{ label:'Demande max (MW)', data:values, backgroundColor:colors, borderRadius:4 }]},
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+Math.round(ctx.parsed.y).toLocaleString('fr-CA')+' MW'}}},
-        scales:{ x:{grid:{display:false}}, y:{grid:{color:'#ede8df'}, ticks:{callback:v=>v.toLocaleString('fr-CA')+' MW'}, min:10000} }
-      }
-    });
-  }
-}
-
-function buildProfil() {
-  const annee = document.getElementById('profil-annee').value;
-  const mois  = document.getElementById('profil-mois').value;
-  let d = ALL_DATA;
-  if(annee) d = d.filter(x=>x.annee==annee);
-  if(mois)  d = d.filter(x=>x.mois.endsWith('-'+mois.padStart(2,'0')));
-
-  const byHeure = {};
-  for(let h=0;h<24;h++) byHeure[h]={sum:0,count:0};
-  d.forEach(x => {
-    byHeure[x.heure].sum += x.mw;
-    byHeure[x.heure].count++;
-  });
-
-  const labels = Array.from({length:24},(_,i)=>i+'h');
-  const values = Array.from({length:24},(_,i)=>byHeure[i].count ? byHeure[i].sum/byHeure[i].count : 0);
-
-  if(chartProfil) {
-    chartProfil.data.datasets[0].data = values;
-    chartProfil.update('active');
-  } else {
-    chartProfil = new Chart(document.getElementById('chart-profil'), {
-      type:'line',
-      data:{ labels, datasets:[{ label:'Demande moy (MW)', data:values, borderColor:'#a45a37', backgroundColor:'#a45a3722', borderWidth:2.5, pointRadius:4, pointHoverRadius:6, fill:true, tension:0.4 }]},
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+Math.round(ctx.parsed.y).toLocaleString('fr-CA')+' MW'}}},
-        scales:{ x:{grid:{color:'#ede8df'}}, y:{grid:{color:'#ede8df'}, ticks:{callback:v=>v.toLocaleString('fr-CA')+' MW'}, min:10000} }
-      }
-    });
-  }
-}
-
-/* ── Page switching ── */
-let built = {evolution:false, pointe:false};
-const PAGE_LABELS = {accueil:'accueil',evolution:'évolution',pointe:'pointe',tableau:'tableau'};
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('page-'+name).classList.add('active');
-  const kw = PAGE_LABELS[name]||name;
-  document.querySelectorAll('.nav-tab').forEach(t=>{ if(t.textContent.toLowerCase().includes(kw)) t.classList.add('active'); });
-  if(name==='evolution' && !built.evolution) { buildEvo(); built.evolution=true; }
-  if(name==='pointe'    && !built.pointe)    { buildPointe(); buildProfil(); built.pointe=true; }
-}
-
-/* ── Table ── */
-const PAGE_SIZE=50;
-let filtered=[...ALL_DATA], sortCol='date', sortAsc=false, page=1;
-
-
-function applyFilters() {
-  const q     = document.getElementById('search').value.toLowerCase().trim();
-  const annee = document.getElementById('fil-annee').value;
-  const mois  = document.getElementById('fil-mois').value;
-  // Filtrage optimisé : une seule boucle
-  filtered = [];
-  const moisSuffix = mois ? '-' + mois.padStart(2,'0') : null;
-  for(let i=0;i<ALL_DATA.length;i++){
-    const d = ALL_DATA[i];
-    if(annee && d.annee != annee) continue;
-    if(moisSuffix && !d.mois.endsWith(moisSuffix)) continue;
-    if(q && d.date.indexOf(q) === -1) continue;
-    filtered.push(d);
-  }
-  applySort(); page=1; render();
-}
-
-function sortBy(col){
-  if(sortCol===col) sortAsc=!sortAsc; else{sortCol=col;sortAsc=col!=='date';}
-  applySort(); page=1; render();
-}
-function applySort(){
-  filtered.sort((a,b)=>{
-    if(sortCol==='mw') return sortAsc?a.mw-b.mw:b.mw-a.mw;
-    if(sortCol==='annee') return sortAsc?a.annee-b.annee:b.annee-a.annee;
-    return sortAsc?a.date.localeCompare(b.date):b.date.localeCompare(a.date);
-  });
-}
-
-function hl(text,q){
-  if(!q) return text;
-  const idx=text.toLowerCase().indexOf(q);
-  if(idx<0) return text;
-  return text.substring(0,idx)+'<mark class="hl">'+text.substring(idx,idx+q.length)+'</mark>'+text.substring(idx+q.length);
-}
-
-function render(){
-  const q=document.getElementById('search').value.trim();
-  const total=filtered.length;
-  const pages=Math.max(1,Math.ceil(total/PAGE_SIZE));
-  page=Math.min(page,pages);
-  const slice=filtered.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
-
-  let sum=0,max=0,min=Infinity;
-  filtered.forEach(d=>{sum+=d.mw;if(d.mw>max)max=d.mw;if(d.mw<min)min=d.mw;});
-  if(!filtered.length){max=0;min=0;}
-  document.getElementById('s-count').textContent=total.toLocaleString('fr-CA');
-  document.getElementById('s-moy').textContent=total?fmtMWn(sum/total):'—';
-  document.getElementById('s-max').textContent=max?fmtMWn(max):'—';
-  document.getElementById('s-min').textContent=min?fmtMWn(min):'—';
-
-  ['date','annee','mw'].forEach(c=>{
-    const th=document.getElementById('th-'+c); if(!th)return;
-    th.classList.toggle('active',sortCol===c);
-    th.querySelector('.sort-arrow').textContent=sortCol===c?(sortAsc?'↑':'↓'):'↕';
-  });
-
-  const tbody=document.getElementById('tbody');
-  const frag=document.createDocumentFragment();
-  slice.forEach(d=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="td-date">${hl(d.date,q.toLowerCase())}</td><td>${d.annee}</td><td class="mw-cell">${fmtMWn(d.mw)} MW</td>`;
-    frag.appendChild(tr);
-  });
-  tbody.innerHTML=''; tbody.appendChild(frag);
-
-  document.getElementById('pag-info').textContent=`Lignes ${((page-1)*PAGE_SIZE+1).toLocaleString('fr-CA')} – ${Math.min(page*PAGE_SIZE,total).toLocaleString('fr-CA')} sur ${total.toLocaleString('fr-CA')}`;
-  const pag=document.getElementById('pag-controls'); pag.innerHTML='';
-  const addBtn=(label,p,disabled=false,active=false)=>{
-    const b=document.createElement('button'); b.innerHTML=label; b.disabled=disabled;
-    if(active) b.classList.add('active');
-    if(!disabled) b.onclick=()=>{page=p;render();};
-    pag.appendChild(b);
-  };
-  const addEll=()=>{const s=document.createElement('span');s.className='pag-ellipsis';s.textContent='…';pag.appendChild(s);};
-  addBtn('‹',page-1,page===1);
-  let last=0;
-  for(let p=1;p<=pages;p++){
-    const show=p===1||p===pages||Math.abs(p-page)<=2;
-    if(show){if(last&&p-last>1)addEll();addBtn(p,p,false,p===page);last=p;}
-  }
-  addBtn('›',page+1,page===pages);
-}
-
-function resetFilters(){
-  document.getElementById('search').value='';
-  document.getElementById('fil-annee').value='';
-  document.getElementById('fil-mois').value='';
-  applyFilters();
-}
-
-/* ── Download ── */
-function dlCSV(allData){
-  const data=allData?ALL_DATA:filtered;
-  const label=allData?'toutes-les-donnees':'donnees-filtrees';
-  const rows=[['Date et heure','Année','Mois','Heure','Demande (MW)']];
-  data.forEach(d=>rows.push([d.date,d.annee,d.mois,d.heure,Math.round(d.mw)]));
-  const csv='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='demande-electricite-'+label+'.csv'; a.style.display='none';
-  document.body.appendChild(a); a.click();
-  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
-}
-
-function dlPDF(allData){
-  const data=allData?ALL_DATA:filtered;
-  const label=allData?'Toutes les données':'Données filtrées';
-  const now=new Date().toLocaleDateString('fr-CA',{year:'numeric',month:'long',day:'numeric'});
-  const rows=data.map(d=>{
-    const dt=new Date(d.date).toLocaleString('fr-CA',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    return `<tr><td>${dt}</td><td>${d.annee}</td><td style="text-align:right">${Math.round(d.mw).toLocaleString('fr-CA')} MW</td></tr>`;
-  }).join('');
-  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Demande électricité — OTERAUD</title>
-  <style>body{font-family:Arial,sans-serif;font-size:10px;color:#222;margin:1.5cm}h1{font-size:14px;color:#62878b;margin-bottom:4px}.sub{font-size:9px;color:#888;margin-bottom:12px}table{width:100%;border-collapse:collapse}th{background:#62878b;color:#fff;padding:5px 8px;text-align:left;font-size:9px;text-transform:uppercase}td{padding:4px 8px;border-bottom:1px solid #ede8df}tr:nth-child(even) td{background:#f5f2ed}.footer{margin-top:12px;font-size:8px;color:#aaa;text-align:center}@media print{body{margin:1cm}}</style>
-  </head><body>
-  <h1>Demande d'électricité au Québec — OTERAUD</h1>
-  <div class="sub">${label} · ${data.length.toLocaleString('fr-CA')} entrées · Exporté le ${now}</div>
-  <table><thead><tr><th>Date et heure</th><th>Année</th><th>Demande (MW)</th></tr></thead><tbody>${rows}</tbody></table>
-  <div class="footer">Source : Hydro-Québec — Données ouvertes · OTERAUD 2026 · Codage assisté par Claude (Anthropic)</div>
-  <script>window.onload=function(){window.print();}<\/script></body></html>`;
-  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url),10000);
-}
-
-/* ── Init ── */
-document.getElementById('search').addEventListener('input', debounce(applyFilters,300));
-document.getElementById('fil-annee').addEventListener('change', applyFilters);
-document.getElementById('fil-mois').addEventListener('change', applyFilters);
-chargerDonnees();
 </script>
+
 </body>
+</html>
