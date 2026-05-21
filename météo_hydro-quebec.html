@@ -274,7 +274,7 @@ select:focus, input[type="date"]:focus {
 .accueil-intro h2 {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--teal);
+  color: var(--terre);
   margin-bottom: 0.85rem;
 }
 .accueil-intro p {
@@ -291,7 +291,7 @@ select:focus, input[type="date"]:focus {
   margin-bottom: 2rem;
 }
 .accueil-card {
-  background: #fff;
+  background: #62878b;
   border: 1.5px solid var(--creme);
   border-radius: 12px;
   padding: 1.4rem 1.25rem 1.2rem;
@@ -492,6 +492,31 @@ footer .footer-credits {
   white-space: nowrap;
   align-self: center;
 }
+
+/* ══ BANDEAU DE PRÉSENTATION ══ */
+.presentation-banner {
+  background: #fff;
+  border-bottom: 1px solid var(--creme);
+  padding: 1.25rem 2rem;
+}
+.presentation-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+.presentation-inner h2 {
+  font-size: 1.0rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 0.6rem;
+}
+.presentation-inner p {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: #444;
+  margin-bottom: 0.35rem;
+}
+.presentation-inner p:last-child { margin-bottom: 0; }
+.presentation-inner strong { color: var(--terre); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -524,6 +549,15 @@ footer .footer-credits {
   <div class="nav-tab" onclick="showPage('carte')">Carte</div>
   <div class="nav-tab" onclick="showPage('tableau')">Tableau</div>
 </nav>
+
+<!-- ══ BANDEAU DE PRÉSENTATION ══ -->
+<div class="presentation-banner">
+  <div class="presentation-inner">
+    <h2>Explorer les données météorologiques historiques du Québec recueillies par Hydro-Québec</h2>
+    <p>Cette application donne accès aux données météorologiques horaires issues de <strong>59 stations d'Environnement Canada</strong> situées au Québec, diffusées en données ouvertes par Hydro-Québec. Les données couvrent la période de <strong>1995 à aujourd'hui</strong>.</p>
+    <p>Pour commencer, <strong>sélectionnez une station, une variable et une période</strong> dans le panneau ci-dessous, puis cliquez sur <em>Charger les données</em>. Naviguez ensuite entre les onglets pour visualiser les résultats sous différentes formes.</p>
+  </div>
+</div>
 
 <!-- ══ PANNEAU DE SÉLECTION (persistant) ══ -->
 <div class="selection-panel" id="selection-panel">
@@ -688,11 +722,7 @@ footer .footer-credits {
 <div class="page active" id="page-accueil">
   <div class="accueil-wrap">
 
-    <div class="accueil-intro">
-      <h2>Explorer les données météorologiques historiques du Québec recueillies par Hydro-Québec</h2>
-      <p>Cette application donne accès aux données météorologiques horaires issues de <strong>59 stations d'Environnement Canada</strong> situées au Québec, diffusées en données ouvertes par Hydro-Québec. Les données couvrent la période de <strong>1995 à aujourd'hui</strong>.</p>
-      <p>Pour commencer, <strong>sélectionnez une station, une variable et une période</strong> dans le panneau ci-dessus, puis cliquez sur <em>Charger les données</em>. Naviguez ensuite entre les onglets pour visualiser les résultats sous différentes formes.</p>
-    </div>
+    
 
     <div class="accueil-cards">
       <div class="accueil-card" onclick="showPage('graphique')">
@@ -757,9 +787,8 @@ footer .footer-credits {
 
 <script>
 // ══ CONFIGURATION ══
-const API_URL = '/api/meteo'; // Fonction Netlify proxy
-let ALL_DATA  = [];           // Données chargées en mémoire
-let DATE_MAX  = null;         // Dernière date disponible dans la source HQ
+const API_URL  = '/api/meteo'; // Fonction Netlify proxy
+let   ALL_DATA = [];           // Données chargées en mémoire
 
 // ══ NAVIGATION ══
 function showPage(id) {
@@ -774,6 +803,63 @@ function showPage(id) {
     }
   });
 }
+
+// ══ RACCOURCIS PÉRIODE ══
+let activePeriodDays = 7;
+let DATE_MAX = null; // Dernière date disponible dans la source HQ
+
+// Appelle la fonction Netlify pour récupérer la date max disponible
+async function chargerDateMax() {
+  const badge = document.getElementById('badge-date-max');
+  try {
+    const res  = await fetch('/api/meteo?dateMax=1');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.dateMax) {
+      DATE_MAX = data.dateMax; // format YYYY-MM-DD
+      badge.textContent = 'Données jusqu\'au ' + DATE_MAX;
+      // Bloquer le champ date-fin à cette valeur maximale
+      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
+    } else {
+      throw new Error('dateMax absent de la réponse');
+    }
+  } catch (e) {
+    badge.textContent = 'Date inconnue';
+    console.warn('chargerDateMax :', e.message);
+  }
+  // Dans tous les cas, initialiser les dates après (avec DATE_MAX ou fallback)
+  initDates();
+}
+
+function setPeriod(days, btn) {
+  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activePeriodDays = days;
+  const customDates = document.getElementById('custom-dates');
+  if (days === 0) {
+    customDates.style.display = 'flex';
+  } else {
+    customDates.style.display = 'none';
+    // Borne supérieure = DATE_MAX si disponible, sinon aujourd'hui
+    const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+    const debut = new Date(fin);
+    debut.setDate(fin.getDate() - days);
+    document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
+    document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+  }
+}
+
+// Initialise les dates (7 j en arrière depuis DATE_MAX ou aujourd'hui)
+function initDates() {
+  const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+  const debut = new Date(fin);
+  debut.setDate(fin.getDate() - 7);
+  document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
+  document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+}
+
+// Lancer au chargement de la page
+chargerDateMax();
 
 // ══ UTILITAIRES ══
 function showLoader(msg, progress) {
@@ -793,6 +879,7 @@ function cacherErreur() {
   document.getElementById('error-bar').classList.remove('visible');
 }
 
+// Formatage des valeurs selon la variable
 function fmtVal(v, variable) {
   if (v === null || v === undefined) return '—';
   const n = parseFloat(v);
@@ -804,55 +891,6 @@ function fmtVal(v, variable) {
   return n.toFixed(1) + (unites[variable] || '');
 }
 
-// ══ GESTION DES DATES ══
-function initDates() {
-  const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
-  const debut = new Date(fin);
-  debut.setDate(fin.getDate() - 7);
-  document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
-  document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
-}
-
-function setPeriod(days, btn) {
-  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  activePeriodDays = days;
-  const customDates = document.getElementById('custom-dates');
-  if (days === 0) {
-    customDates.style.display = 'flex';
-  } else {
-    customDates.style.display = 'none';
-    const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
-    const debut = new Date(fin);
-    debut.setDate(fin.getDate() - days);
-    document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
-    document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
-  }
-}
-
-let activePeriodDays = 7;
-
-// ══ CHARGEMENT DE LA DATE MAX (via Netlify, sans CORS) ══
-async function chargerDateMax() {
-  const badge = document.getElementById('badge-date-max');
-  try {
-    const res = await fetch('/api/meteo?dateMax=1');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.dateMax) {
-      DATE_MAX = data.dateMax;
-      badge.textContent = 'Données jusqu\'au ' + DATE_MAX;
-      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
-    } else {
-      throw new Error('dateMax absent');
-    }
-  } catch (e) {
-    badge.textContent = 'Date inconnue';
-    console.warn('chargerDateMax :', e.message);
-  }
-  initDates(); // toujours initialiser, avec DATE_MAX ou fallback
-}
-
 // ══ CHARGEMENT VIA LA FONCTION NETLIFY ══
 async function chargerDonnees() {
   const station   = document.getElementById('sel-station').value;
@@ -860,6 +898,7 @@ async function chargerDonnees() {
   const dateDebut = document.getElementById('date-debut').value;
   const dateFin   = document.getElementById('date-fin').value;
 
+  // Validation
   if (!station)               { showError('Veuillez choisir une station.'); return; }
   if (!dateDebut || !dateFin) { showError('Veuillez définir une période.'); return; }
   if (dateDebut > dateFin)    { showError('La date de début doit être antérieure à la date de fin.'); return; }
@@ -871,7 +910,9 @@ async function chargerDonnees() {
   btn.textContent = '⏳ Chargement…';
 
   try {
-    showLoader('Connexion à l\'API Hydro-Québec…');
+    showLoader('Connexion à l'API Hydro-Québec…');
+
+    // Appel à la fonction Netlify (proxy côté serveur)
     const params = new URLSearchParams({ station, dateDebut, dateFin, variable });
     const res    = await fetch(`${API_URL}?${params}`);
 
@@ -889,9 +930,10 @@ async function chargerDonnees() {
 
     ALL_DATA = data.results;
 
+    // ── Calcul des statistiques ──
     // Détecter la clé de la variable dans les résultats
     const varKeys = {
-      t:  ['t_c', 't', 'température [°c]'],
+      t: ['t_c', 't', 'température [°c]'],
       tf: ['tf_c', 'tf', 'température humide [°c]'],
       hr: ['hr', 'humidité relative [%]'],
       pa: ['pa_hpa', 'pa', 'pression atmosphérique [hpa]'],
@@ -900,7 +942,8 @@ async function chargerDonnees() {
       dv: ['dv', 'direction du vent [0-360°]']
     };
     const candidates = varKeys[variable] || [variable];
-    let realKey = null;
+    const allKeys    = Object.keys(ALL_DATA[0]).map(k => k.toLowerCase());
+    let realKey      = null;
     for (const c of candidates) {
       const found = Object.keys(ALL_DATA[0]).find(k => k.toLowerCase() === c.toLowerCase());
       if (found) { realKey = found; break; }
@@ -914,14 +957,16 @@ async function chargerDonnees() {
     const vMax = valeurs.length ? Math.max(...valeurs) : null;
     const vMoy = valeurs.length ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length : null;
 
-    document.getElementById('s-station').textContent         = station;
-    document.getElementById('s-periode').textContent         = dateDebut + ' → ' + dateFin;
+    // ── Mise à jour barre d'état ──
+    document.getElementById('s-station').textContent        = station;
+    document.getElementById('s-periode').textContent        = dateDebut + ' → ' + dateFin;
     document.getElementById('s-enregistrements').textContent = ALL_DATA.length.toLocaleString('fr-CA');
-    document.getElementById('s-min').textContent             = fmtVal(vMin, variable);
-    document.getElementById('s-moy').textContent             = fmtVal(vMoy, variable);
-    document.getElementById('s-max').textContent             = fmtVal(vMax, variable);
+    document.getElementById('s-min').textContent            = fmtVal(vMin, variable);
+    document.getElementById('s-moy').textContent            = fmtVal(vMoy, variable);
+    document.getElementById('s-max').textContent            = fmtVal(vMax, variable);
     document.getElementById('status-bar').classList.add('visible');
 
+    // Labels dynamiques selon la variable
     const varLabels = {
       t:  ['Min °C','Moy. °C','Max °C'],
       tf: ['Min °C','Moy. °C','Max °C'],
@@ -937,6 +982,7 @@ async function chargerDonnees() {
     if (statEls[4]) statEls[4].textContent = lbls[1];
     if (statEls[5]) statEls[5].textContent = lbls[2];
 
+    // Message dans les pages
     const nRec = ALL_DATA.length.toLocaleString('fr-CA');
     ['graphique', 'carte', 'tableau'].forEach(id => {
       const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
@@ -957,10 +1003,6 @@ async function chargerDonnees() {
     btn.textContent = '⬇ Charger les données';
   }
 }
-
-// ══ LANCEMENT AU CHARGEMENT ══
-// chargerDateMax est async : elle s'exécute sans bloquer le reste de la page
-chargerDateMax();
 </script>
 
 </body>
