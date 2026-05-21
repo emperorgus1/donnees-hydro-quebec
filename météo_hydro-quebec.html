@@ -479,6 +479,23 @@ footer .footer-credits {
 }
 .error-bar.visible { display: flex; }
 .error-msg { font-size: 0.78rem; font-weight: 600; color: #b91c1c; }
+
+/* ══ BADGE DATE MAX ══ */
+.date-max-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #9a7040;
+  background: var(--ocre-light);
+  border: 1px solid #f0d9a0;
+  border-radius: 5px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+.btn-period:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -596,12 +613,13 @@ footer .footer-credits {
 
   <div class="sel-group">
     <label>Période rapide</label>
-    <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-      <button class="btn-period active" onclick="setPeriod(7, this)">7 j</button>
-      <button class="btn-period" onclick="setPeriod(30, this)">30 j</button>
-      <button class="btn-period" onclick="setPeriod(90, this)">3 mois</button>
-      <button class="btn-period" onclick="setPeriod(365, this)">1 an</button>
-      <button class="btn-period" onclick="setPeriod(0, this)">Perso.</button>
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
+      <button class="btn-period active" id="btn-7j"   onclick="setPeriod(7, this)">7 j</button>
+      <button class="btn-period"        id="btn-30j"  onclick="setPeriod(30, this)">30 j</button>
+      <button class="btn-period"        id="btn-90j"  onclick="setPeriod(90, this)">3 mois</button>
+      <button class="btn-period"        id="btn-365j" onclick="setPeriod(365, this)">1 an</button>
+      <button class="btn-period"        id="btn-perso" onclick="setPeriod(0, this)">Perso.</button>
+      <span class="date-max-badge" id="badge-date-max" title="Dernière date disponible dans la source">⏳ Vérification…</span>
     </div>
   </div>
 
@@ -695,7 +713,7 @@ footer .footer-credits {
 
     <div class="accueil-tableau-btn">
       <p>Consultez les données brutes heure par heure : filtrez par date, triez les colonnes et téléchargez les résultats en format CSV.</p>
-      <button class="btn-tableau" onclick="showPage('tableau')">Accès au tableau de données</button>
+      <button class="btn-tableau" onclick="showPage('tableau')">⊞ Accès au tableau de données</button>
     </div>
 
     <div class="accueil-tableau-btn">
@@ -762,6 +780,52 @@ function showPage(id) {
 
 // ══ RACCOURCIS PÉRIODE ══
 let activePeriodDays = 7;
+let DATE_MAX = null; // Date maximale disponible dans l'API
+
+// Récupère la date maximale disponible dans la source de données
+async function chargerDateMax() {
+  const badge = document.getElementById('badge-date-max');
+  try {
+    const url = 'https://donnees.hydroquebec.com/api/explore/v2.1/catalog/datasets/historique-donnees-meteo/records'
+      + '?limit=1&order_by=date_locale%20DESC&select=date_locale&timezone=America/Toronto';
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.results && data.results.length > 0) {
+      const raw = data.results[0].date_locale || data.results[0].date_utc || '';
+      // Garder uniquement la partie YYYY-MM-DD
+      DATE_MAX = raw.substring(0, 10);
+      badge.textContent = 'Données jusqu'au ' + DATE_MAX;
+      badge.title = 'Dernière date disponible dans la source Hydro-Québec';
+      // Bloquer le champ date-fin au max disponible
+      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
+      // Désactiver les boutons de période dont la plage dépasserait le passé disponible
+      ajusterBoutonsPeriode();
+      // Recalculer les dates par défaut (7 jours) avec DATE_MAX comme borne supérieure
+      initDates();
+    }
+  } catch (e) {
+    badge.textContent = 'Date inconnue';
+    badge.title = 'Impossible de récupérer la date maximale : ' + e.message;
+    console.warn('chargerDateMax :', e.message);
+    initDates(); // Utiliser la date du jour comme fallback
+  }
+}
+
+// Désactive les boutons de période rapide si la plage excède les données disponibles
+function ajusterBoutonsPeriode() {
+  if (!DATE_MAX) return;
+  const max    = new Date(DATE_MAX);
+  const heute  = new Date();
+  // Nombre de jours entre aujourd'hui et DATE_MAX (peut être négatif si DATE_MAX < aujourd'hui)
+  const joursDispos = Math.floor((max - heute) / 86400000); // négatif si données en retard
+  // On n'active un bouton que si DATE_MAX - N jours >= "assez loin"
+  // En pratique : tous les boutons restent disponibles, on ajuste juste les dates calculées
+  // (les données peuvent couvrir des années, juste pas jusqu'à aujourd'hui)
+  const map = { 'btn-7j': 7, 'btn-30j': 30, 'btn-90j': 90, 'btn-365j': 365 };
+  // Aucun bouton à désactiver : les plages restent valides, elles seront simplement
+  // recadrées sur DATE_MAX comme borne supérieure dans setPeriod
+}
 
 function setPeriod(days, btn) {
   document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
@@ -772,22 +836,26 @@ function setPeriod(days, btn) {
     customDates.style.display = 'flex';
   } else {
     customDates.style.display = 'none';
-    const fin   = new Date();
-    const debut = new Date();
+    // Utiliser DATE_MAX comme borne supérieure si disponible, sinon aujourd'hui
+    const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+    const debut = new Date(fin);
     debut.setDate(fin.getDate() - days);
     document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
     document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
   }
 }
 
-// Dates par défaut : 7 derniers jours
-(function initDates() {
-  const fin   = new Date();
-  const debut = new Date();
+// Initialiser les dates par défaut (7 jours en arrière depuis DATE_MAX)
+function initDates() {
+  const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+  const debut = new Date(fin);
   debut.setDate(fin.getDate() - 7);
   document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
   document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
-})();
+}
+
+// Lancer la récupération de la date max au chargement de la page
+chargerDateMax();
 
 // ══ UTILITAIRES ══
 function showLoader(msg, progress) {
@@ -838,7 +906,7 @@ async function chargerDonnees() {
   btn.textContent = '⏳ Chargement…';
 
   try {
-    showLoader('Connexion à l\'API Hydro-Québec…');
+    showLoader('Connexion à l'API Hydro-Québec…');
 
     // Appel à la fonction Netlify (proxy côté serveur)
     const params = new URLSearchParams({ station, dateDebut, dateFin, variable });
