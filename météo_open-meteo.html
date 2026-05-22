@@ -6,6 +6,9 @@
 <title>Données météo — OTERAUD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -20,416 +23,137 @@
   --ocre-light:  #fef3dc;
   --font: 'Montserrat', sans-serif;
 }
-
-body {
-  font-family: var(--font);
-  background: var(--creme-light);
-  color: var(--noir);
-  min-height: 100vh;
-  font-size: 14px;
-  display: flex;
-  flex-direction: column;
-}
+body { font-family: var(--font); background: var(--creme-light); color: var(--noir); min-height: 100vh; font-size: 14px; display: flex; flex-direction: column; }
 
 /* ══ BANDEAU OTERAUD ══ */
-.oteraud-bar {
-  background: var(--noir);
-  color: var(--creme);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 5px 2rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.oteraud-bar a {
-  color: var(--creme);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  font-weight: 600;
-  transition: color 0.15s;
-}
+.oteraud-bar { background: var(--noir); color: var(--creme); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 2rem; display: flex; align-items: center; gap: 1rem; }
+.oteraud-bar a { color: var(--creme); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; transition: color 0.15s; }
 .oteraud-bar a:hover { color: var(--ocre); }
 
 /* ══ HEADER ══ */
-header {
-  background: var(--teal);
-  color: #fff;
-  padding: 0.75rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border-bottom: 4px solid var(--ocre);
-}
-.header-logo-block {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-.header-logo-divider {
-  width: 1px;
-  height: 28px;
-  background: rgba(255,255,255,0.35);
-  flex-shrink: 0;
-}
-.header-left h1 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
-}
-.header-left p {
-  font-size: 0.68rem;
-  font-weight: 500;
-  opacity: 0.82;
-  margin-top: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-.header-badge {
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+header { background: var(--teal); color: #fff; padding: 0.75rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 4px solid var(--ocre); }
+.header-logo-block { display: flex; align-items: center; gap: 0.85rem; }
+.header-logo-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); flex-shrink: 0; }
+.header-left h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; }
+.header-left p { font-size: 0.68rem; font-weight: 500; opacity: 0.82; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.07em; }
+.header-badge { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); border-radius: 999px; padding: 5px 14px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.header-logo { height: 34px; width: auto; display: block; flex-shrink: 0; }
 
 /* ══ NAVIGATION ══ */
-.app-nav {
-  background: var(--noir);
-  display: flex;
-  gap: 0;
-  padding: 0 2rem;
-  border-bottom: 3px solid var(--ocre);
-}
-.nav-tab {
-  padding: 11px 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -3px;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-  user-select: none;
-}
+.app-nav { background: var(--noir); display: flex; gap: 0; padding: 0 2rem; border-bottom: 3px solid var(--ocre); }
+.nav-tab { padding: 11px 20px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.5); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -3px; transition: color 0.15s, border-color 0.15s; white-space: nowrap; user-select: none; }
 .nav-tab:hover { color: rgba(255,255,255,0.85); }
-.nav-tab.active {
-  color: var(--ocre);
-  border-bottom-color: var(--ocre);
-}
+.nav-tab.active { color: var(--ocre); border-bottom-color: var(--ocre); }
+
+/* ══ BANDEAU DE PRÉSENTATION ══ */
+.presentation-banner { background: #fff; border-bottom: 1px solid var(--creme); padding: 1.25rem 2rem; }
+.presentation-inner { max-width: 960px; margin: 0 auto; }
+.presentation-inner h2 { font-size: 1.0rem; font-weight: 700; color: var(--teal); margin-bottom: 0.6rem; }
+.presentation-inner p { font-size: 0.85rem; line-height: 1.7; color: #444; margin-bottom: 0.35rem; }
+.presentation-inner p:last-child { margin-bottom: 0; }
+.presentation-inner strong { color: var(--terre); font-weight: 600; }
+
+/* ══ PANNEAU DE SÉLECTION ══ */
+body.page-accueil .selection-panel,
+body.page-accueil .loader-bar,
+body.page-accueil .error-bar,
+body.page-accueil .status-bar { display: none !important; }
+.selection-panel { background: #fff; border-bottom: 2px solid var(--creme); padding: 1.1rem 2rem; display: flex; justify-content: center; }
+.selection-panel-inner { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; max-width: 960px; width: 100%; }
+.sel-group { display: flex; flex-direction: column; gap: 5px; }
+.sel-group label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--teal); }
+select, input[type="date"], input[type="number"], input[type="text"] { border: 1.5px solid var(--creme); background: var(--creme-light); color: var(--noir); border-radius: 6px; padding: 7px 11px; font-size: 0.82rem; font-family: var(--font); font-weight: 500; outline: none; transition: border-color 0.15s; }
+select:focus, input:focus { border-color: var(--teal); background: #fff; }
+.sel-dates { display: flex; gap: 0.5rem; align-items: center; }
+.sel-dates span { font-size: 0.75rem; color: #999; font-weight: 500; }
+.btn-period { padding: 4px 10px; border-radius: 5px; font-size: 0.68rem; font-family: var(--font); font-weight: 700; cursor: pointer; border: 1.5px solid var(--creme); background: var(--creme-light); color: var(--noir); letter-spacing: 0.04em; transition: background 0.12s, border-color 0.12s, color 0.12s; }
+.btn-period:hover, .btn-period.active { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+.btn-charger { padding: 9px 22px; border-radius: 6px; font-size: 0.78rem; font-family: var(--font); font-weight: 700; cursor: pointer; border: none; background: var(--teal); color: #fff; letter-spacing: 0.04em; transition: background 0.15s, transform 0.1s; align-self: flex-end; white-space: nowrap; }
+.btn-charger:hover { background: #4e6e71; transform: translateY(-1px); }
+.btn-charger:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.coords-inputs { display: flex; gap: 0.4rem; align-items: center; }
+.coords-inputs input { width: 90px; }
+.coords-inputs span { font-size: 0.72rem; color: #999; }
+
+/* ══ BARRE D'ÉTAT ══ */
+.status-bar { background: var(--ocre-light); border-bottom: 1px solid #f0d9a0; padding: 0.6rem 2rem; display: none; flex-wrap: wrap; gap: 1.75rem; align-items: center; }
+.status-bar.visible { display: flex; }
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat-val { font-size: 1.05rem; font-weight: 700; color: var(--terre); letter-spacing: -0.02em; }
+.stat-lbl { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #9a7040; }
+.stat-divider { width: 1px; height: 30px; background: #e8c97a; }
+
+/* ══ LOADER ══ */
+.loader-bar { background: var(--ocre-light); border-bottom: 1px solid #f0d9a0; padding: 8px 2rem; display: none; align-items: center; gap: 0.75rem; }
+.loader-bar.visible { display: flex; }
+.loader-spinner { width: 16px; height: 16px; border: 2px solid var(--creme); border-top-color: var(--terre); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-msg { font-size: 0.78rem; font-weight: 600; color: var(--terre); }
+.loader-progress { font-size: 0.7rem; color: #9a7040; font-weight: 500; margin-left: auto; }
+.error-bar { background: #fef2f2; border-bottom: 1px solid #fecaca; padding: 8px 2rem; display: none; align-items: center; gap: 0.75rem; }
+.error-bar.visible { display: flex; }
+.error-msg { font-size: 0.78rem; font-weight: 600; color: #b91c1c; }
+
+/* ══ BADGE ══ */
+.date-max-badge { font-size: 0.68rem; font-weight: 600; color: #9a7040; background: var(--ocre-light); border: 1px solid #f0d9a0; border-radius: 5px; padding: 3px 9px; white-space: nowrap; align-self: center; }
 
 /* ══ PAGES ══ */
 .page { display: none; flex: 1; }
 .page.active { display: block; }
 
-/* ══ PANNEAU DE SÉLECTION ══ */
-.selection-panel {
-  background: #fff;
-  border-bottom: 2px solid var(--creme);
-  padding: 1.1rem 2rem;
-  display: flex;
-  justify-content: center;
-}
-.selection-panel-inner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: flex-end;
-  max-width: 960px;
-  width: 100%;
-}
-.sel-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.sel-group label {
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--teal);
-}
-select, input[type="date"] {
-  border: 1.5px solid var(--creme);
-  background: var(--creme-light);
-  color: var(--noir);
-  border-radius: 6px;
-  padding: 7px 11px;
-  font-size: 0.82rem;
-  font-family: var(--font);
-  font-weight: 500;
-  outline: none;
-  transition: border-color 0.15s;
-  min-width: 175px;
-}
-select:focus, input[type="date"]:focus {
-  border-color: var(--teal);
-  background: #fff;
-}
-.sel-dates {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-.sel-dates span {
-  font-size: 0.75rem;
-  color: #999;
-  font-weight: 500;
-}
-.btn-period {
-  padding: 4px 10px;
-  border-radius: 5px;
-  font-size: 0.68rem;
-  font-family: var(--font);
-  font-weight: 700;
-  cursor: pointer;
-  border: 1.5px solid var(--creme);
-  background: var(--creme-light);
-  color: var(--noir);
-  letter-spacing: 0.04em;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-.btn-period:hover,
-.btn-period.active {
-  background: var(--teal-light);
-  border-color: var(--teal);
-  color: var(--teal);
-}
-.btn-charger {
-  padding: 9px 22px;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  font-family: var(--font);
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  background: var(--teal);
-  color: #fff;
-  letter-spacing: 0.04em;
-  transition: background 0.15s, transform 0.1s;
-  align-self: flex-end;
-  white-space: nowrap;
-}
-.btn-charger:hover {
-  background: #4e6e71;
-  transform: translateY(-1px);
-}
-.btn-charger:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ══ BARRE D'ÉTAT (après chargement) ══ */
-.status-bar {
-  background: var(--ocre-light);
-  border-bottom: 1px solid #f0d9a0;
-  padding: 0.6rem 2rem;
-  display: none;
-  flex-wrap: wrap;
-  gap: 1.75rem;
-  align-items: center;
-}
-.status-bar.visible { display: flex; }
-.stat { display: flex; flex-direction: column; gap: 2px; }
-.stat-val {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--terre);
-  letter-spacing: -0.02em;
-}
-.stat-lbl {
-  font-size: 0.6rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #9a7040;
-}
-.stat-divider {
-  width: 1px;
-  height: 30px;
-  background: #e8c97a;
-}
-
 /* ══ PAGE ACCUEIL ══ */
-.accueil-wrap {
-  padding: 2rem;
-  max-width: 960px;
-  margin: 0 auto;
-}
-.accueil-intro {
-  margin-bottom: 2rem;
-}
-.accueil-intro h2 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--teal);
-  margin-bottom: 0.85rem;
-}
-.accueil-intro p {
-  font-size: 0.88rem;
-  line-height: 1.75;
-  color: #444;
-  margin-bottom: 0.55rem;
-}
-.accueil-intro strong { color: var(--terre); font-weight: 600; }
-.accueil-cards {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-.accueil-card {
-  background: #fff;
-  border: 1.5px solid var(--creme);
-  border-radius: 12px;
-  padding: 1.4rem 1.25rem 1.2rem;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.accueil-card:hover {
-  border-color: var(--teal);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(98,135,139,0.13);
-}
-.accueil-card-icon {
-  font-size: 1.5rem;
-  margin-bottom: 0.2rem;
-}
-.accueil-card h3 {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--noir);
-}
-.accueil-card p {
-  font-size: 0.78rem;
-  line-height: 1.6;
-  color: #666;
-  flex: 1;
-}
-.accueil-card-link {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--teal);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin-top: 0.5rem;
-}
+.accueil-wrap { padding: 2rem; max-width: 960px; margin: 0 auto; }
+.accueil-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem; }
+.accueil-card { background: #fff; border: 1.5px solid var(--creme); border-radius: 12px; padding: 1.4rem 1.25rem 1.2rem; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s; display: flex; flex-direction: column; gap: 0.5rem; }
+.accueil-card:hover { border-color: var(--teal); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(98,135,139,0.13); }
+.accueil-card h3 { font-size: 0.88rem; font-weight: 700; color: var(--noir); }
+.accueil-card p { font-size: 0.78rem; line-height: 1.6; color: #666; flex: 1; }
+.accueil-card-link { font-size: 0.72rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 0.5rem; }
 .accueil-card:hover .accueil-card-link { color: var(--terre); }
-
-.accueil-tableau-btn {
-  margin-top: 1.75rem;
-  padding-top: 1.5rem;
-  border-top: 1.5px solid var(--creme);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.accueil-tableau-btn p {
-  font-size: 0.82rem;
-  color: #666;
-  line-height: 1.6;
-  flex: 1;
-  margin-bottom: 0 !important;
-}
-.btn-tableau {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: var(--teal);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0.65rem 1.4rem;
-  font-family: var(--font);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: background 0.15s, transform 0.12s;
-  flex-shrink: 0;
-}
+.accueil-tableau-btn { margin-top: 1.75rem; padding-top: 1.5rem; border-top: 1.5px solid var(--creme); display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.accueil-tableau-btn p { font-size: 0.82rem; color: #666; line-height: 1.6; flex: 1; margin-bottom: 0 !important; }
+.btn-tableau { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: var(--teal); color: #fff; border: none; border-radius: 8px; padding: 0.65rem 1.4rem; font-family: var(--font); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; white-space: nowrap; text-decoration: none; transition: background 0.15s, transform 0.12s; flex-shrink: 0; }
 .btn-tableau:hover { background: #4e6e71; transform: translateY(-1px); }
-.variables-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-.var-chip {
-  background: var(--teal-light);
-  color: #3a5c5f;
-  border-radius: 999px;
-  padding: 3px 11px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
+.var-chip { background: var(--teal-light); color: #3a5c5f; border-radius: 999px; padding: 3px 11px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; }
 
-/* ══ PAGE GRAPHIQUE / TABLEAU / CARTE — placeholder ══ */
-.page-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
-  color: #aaa;
-  gap: 0.75rem;
-  text-align: center;
-}
+/* ══ PLACEHOLDER ══ */
+.page-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; color: #aaa; gap: 0.75rem; text-align: center; }
 .page-placeholder .ph-icon { font-size: 2.5rem; opacity: 0.4; }
-.page-placeholder p {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #bbb;
-  max-width: 320px;
-  line-height: 1.6;
-}
+.page-placeholder p { font-size: 0.82rem; font-weight: 500; color: #bbb; max-width: 360px; line-height: 1.6; }
+
+/* ══ PAGE GRAPHIQUE ══ */
+.graphique-wrap { padding: 1.5rem 2rem; max-width: 960px; margin: 0 auto; }
+.graphique-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; }
+.graphique-titre { font-size: 0.95rem; font-weight: 700; color: var(--teal); }
+.graphique-sous-titre { font-size: 0.75rem; color: #888; font-weight: 500; margin-top: 2px; }
+.type-toggle { display: flex; gap: 0.4rem; }
+.btn-type { padding: 5px 14px; border-radius: 6px; font-size: 0.72rem; font-family: var(--font); font-weight: 700; cursor: pointer; border: 1.5px solid var(--creme); background: var(--creme-light); color: var(--noir); transition: background 0.12s, border-color 0.12s, color 0.12s; }
+.btn-type.active, .btn-type:hover { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+.graphique-canvas-wrap { background: #fff; border: 1.5px solid var(--creme); border-radius: 12px; padding: 1.25rem; position: relative; min-height: 380px; }
+.graphique-info { margin-top: 0.75rem; font-size: 0.72rem; color: #aaa; text-align: right; }
+
+/* ══ PAGE CARTE ══ */
+.carte-wrap { display: flex; flex-direction: column; height: calc(100vh - 200px); min-height: 520px; padding: 1.25rem 2rem; gap: 0.75rem; }
+.carte-header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; flex-shrink: 0; }
+.carte-titre { font-size: 0.95rem; font-weight: 700; color: var(--teal); }
+.carte-sous-titre { font-size: 0.75rem; color: #888; font-weight: 500; margin-top: 2px; }
+.carte-controls { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+.carte-loading { font-size: 0.78rem; font-weight: 600; color: var(--terre); display: none; align-self: center; }
+.carte-loading.visible { display: block; }
+#ma-carte { flex: 1; border-radius: 12px; border: 1.5px solid var(--creme); overflow: hidden; min-height: 400px; }
+.leaflet-popup-content { font-family: 'Montserrat', sans-serif !important; font-size: 0.82rem; min-width: 210px; }
+.popup-station-nom { font-size: 0.88rem; font-weight: 700; color: var(--teal); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--creme); }
+.popup-date { font-size: 0.68rem; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+.popup-vars { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.popup-var { display: flex; flex-direction: column; }
+.popup-var-label { font-size: 0.62rem; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.popup-var-val { font-size: 0.88rem; font-weight: 700; color: var(--noir); }
 
 /* ══ FOOTER ══ */
-footer {
-  margin-top: auto;
-  background: var(--noir);
-  border-top: 3px solid var(--ocre);
-  padding: 1rem 2rem;
-  text-align: center;
-}
-footer .footer-source {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.6);
-  margin-bottom: 4px;
-}
-footer .footer-source a {
-  color: var(--teal-light);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-footer .footer-credits {
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.3);
-  text-transform: uppercase;
-}
+footer { margin-top: auto; background: var(--noir); border-top: 3px solid var(--ocre); padding: 1rem 2rem; text-align: center; }
+footer .footer-source { font-size: 0.68rem; font-weight: 600; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+footer .footer-source a { color: var(--teal-light); text-decoration: underline; text-underline-offset: 2px; }
+footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.08em; color: rgba(255,255,255,0.3); text-transform: uppercase; }
 
 /* ══ RESPONSIVE ══ */
 @media (max-width: 640px) {
@@ -439,247 +163,7 @@ footer .footer-credits {
   .accueil-cards { grid-template-columns: 1fr; }
   .stat-divider { display: none; }
 }
-
-/* ══ LOGO OTERAUD ══ */
-.header-logo {
-  height: 34px;
-  width: auto;
-  display: block;
-  flex-shrink: 0;
-}
-
-/* ══ LOADER ══ */
-.loader-bar {
-  background: var(--ocre-light);
-  border-bottom: 1px solid #f0d9a0;
-  padding: 8px 2rem;
-  display: none;
-  align-items: center;
-  gap: 0.75rem;
-}
-.loader-bar.visible { display: flex; }
-.loader-spinner {
-  width: 16px; height: 16px;
-  border: 2px solid var(--creme);
-  border-top-color: var(--terre);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loader-msg { font-size: 0.78rem; font-weight: 600; color: var(--terre); }
-.loader-progress { font-size: 0.7rem; color: #9a7040; font-weight: 500; margin-left: auto; }
-.error-bar {
-  background: #fef2f2;
-  border-bottom: 1px solid #fecaca;
-  padding: 8px 2rem;
-  display: none;
-  align-items: center;
-  gap: 0.75rem;
-}
-.error-bar.visible { display: flex; }
-.error-msg { font-size: 0.78rem; font-weight: 600; color: #b91c1c; }
-
-/* ══ BADGE DATE MAX ══ */
-.date-max-badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: #9a7040;
-  background: var(--ocre-light);
-  border: 1px solid #f0d9a0;
-  border-radius: 5px;
-  padding: 3px 9px;
-  white-space: nowrap;
-  align-self: center;
-}
-
-/* ══ BANDEAU DE PRÉSENTATION ══ */
-.presentation-banner {
-  background: #fff;
-  border-bottom: 1px solid var(--creme);
-  padding: 1.25rem 2rem;
-}
-.presentation-inner {
-  max-width: 960px;
-  margin: 0 auto;
-}
-.presentation-inner h2 {
-  font-size: 1.0rem;
-  font-weight: 700;
-  color: var(--teal);
-  margin-bottom: 0.6rem;
-}
-.presentation-inner p {
-  font-size: 0.85rem;
-  line-height: 1.7;
-  color: #444;
-  margin-bottom: 0.35rem;
-}
-.presentation-inner p:last-child { margin-bottom: 0; }
-.presentation-inner strong { color: var(--terre); font-weight: 600; }
-
-/* Masquer filtres, loader et barres sur la page accueil */
-body.page-accueil .selection-panel,
-body.page-accueil .loader-bar,
-body.page-accueil .error-bar,
-body.page-accueil .status-bar {
-  display: none !important;
-}
-
-/* ══ PAGE GRAPHIQUE ══ */
-.graphique-wrap {
-  padding: 1.5rem 2rem;
-  max-width: 960px;
-  margin: 0 auto;
-}
-.graphique-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-.graphique-titre {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--teal);
-}
-.graphique-sous-titre {
-  font-size: 0.75rem;
-  color: #888;
-  font-weight: 500;
-  margin-top: 2px;
-}
-.type-toggle { display: flex; gap: 0.4rem; }
-.btn-type {
-  padding: 5px 14px;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  font-family: var(--font);
-  font-weight: 700;
-  cursor: pointer;
-  border: 1.5px solid var(--creme);
-  background: var(--creme-light);
-  color: var(--noir);
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-.btn-type.active, .btn-type:hover {
-  background: var(--teal-light);
-  border-color: var(--teal);
-  color: var(--teal);
-}
-.graphique-canvas-wrap {
-  background: #fff;
-  border: 1.5px solid var(--creme);
-  border-radius: 12px;
-  padding: 1.25rem;
-  position: relative;
-  min-height: 380px;
-}
-.graphique-info {
-  margin-top: 0.75rem;
-  font-size: 0.72rem;
-  color: #aaa;
-  text-align: right;
-}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-/* ══ PAGE CARTE ══ */
-.carte-wrap {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 200px);
-  min-height: 520px;
-  padding: 1.25rem 2rem;
-  gap: 0.75rem;
-}
-.carte-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  flex-shrink: 0;
-}
-.carte-titre {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--teal);
-}
-.carte-sous-titre {
-  font-size: 0.75rem;
-  color: #888;
-  font-weight: 500;
-  margin-top: 2px;
-}
-.carte-controls {
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.carte-loading {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--terre);
-  display: none;
-  align-self: center;
-}
-.carte-loading.visible { display: block; }
-#ma-carte {
-  flex: 1;
-  border-radius: 12px;
-  border: 1.5px solid var(--creme);
-  overflow: hidden;
-  min-height: 400px;
-}
-/* Popup Leaflet */
-.leaflet-popup-content {
-  font-family: 'Montserrat', sans-serif !important;
-  font-size: 0.82rem;
-  min-width: 200px;
-}
-.popup-station-nom {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--teal);
-  margin-bottom: 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--creme);
-}
-.popup-date {
-  font-size: 0.68rem;
-  color: #aaa;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 8px;
-}
-.popup-vars {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px 12px;
-}
-.popup-var {
-  display: flex;
-  flex-direction: column;
-}
-.popup-var-label {
-  font-size: 0.62rem;
-  color: #aaa;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.popup-var-val {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--noir);
-}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body class="page-accueil">
 
@@ -698,10 +182,10 @@ body.page-accueil .status-bar {
     <div class="header-logo-divider"></div>
     <div class="header-left">
       <h1>Données météorologiques historiques</h1>
-      <p>59 stations · Québec · 2026 · Hydro-Québec</p>
+      <p>Québec · 1940 à aujourd'hui · Open-Meteo / ERA5</p>
     </div>
   </div>
-  <span class="header-badge" id="header-badge">7 variables · Horaire</span>
+  <span class="header-badge">9 variables · Quotidien</span>
 </header>
 
 <!-- ══ NAVIGATION ══ -->
@@ -715,106 +199,120 @@ body.page-accueil .status-bar {
 <!-- ══ BANDEAU DE PRÉSENTATION ══ -->
 <div class="presentation-banner">
   <div class="presentation-inner">
-    <h2>Explorer les données météorologiques historiques du Québec recueillies par Hydro-Québec</h2>
-    <p>Cette application donne accès aux données météorologiques horaires issues de <strong>59 stations d'Environnement Canada</strong> situées au Québec, diffusées en données ouvertes par Hydro-Québec. Les données disponibles couvrent l'année <strong>2026</strong>.</p>
-    <p>Pour commencer, choisissez un des deux types de représentation disponibles : <strong>graphique ou carte</strong>. Vous aurez ainsi accès à une série de filtres qui vous permettra de construire votre requête selon votre besoin. Cliquez ensuite sur <em>Charger les données</em> pour que votre sélection s’affiche. Naviguez ensuite entre les onglets pour visualiser les résultats sous différentes formes.</p>
+    <h2>Explorer les données météorologiques historiques du Québec</h2>
+    <p>Cette application donne accès aux données météorologiques quotidiennes issues de la réanalyse <strong>ERA5</strong> d'ECMWF, diffusées gratuitement par <strong>Open-Meteo</strong>. Les données couvrent la période de <strong>1940 à aujourd'hui</strong> pour n'importe quel point du Québec.</p>
+    <p>Choisissez une région ou saisissez des coordonnées GPS, sélectionnez une variable et une période dans le panneau ci-dessous, puis cliquez sur <em>Charger les données</em>.</p>
   </div>
 </div>
 
-<!-- ══ PANNEAU DE SÉLECTION (persistant) ══ -->
+<!-- ══ PANNEAU DE SÉLECTION ══ -->
 <div class="selection-panel" id="selection-panel">
 <div class="selection-panel-inner">
+
+  <!-- Lieu -->
   <div class="sel-group">
-    <label>Station</label>
-    <select id="sel-station">
-      <option value="">— Choisir une station —</option>
-      <option>BAGOTVILLE</option>
-      <option>BAIE COMEAU</option>
-      <option>BEAUCEVILLE</option>
-      <option>BONNARD</option>
-      <option>CAP CHAT</option>
-      <option>CAP D'ESPOIR</option>
-      <option>CAP MADELEINE</option>
-      <option>CAP TOURMENTE</option>
-      <option>CHIBOUGAMAU-CHAPAIS</option>
-      <option>FRELIGHSBURG</option>
-      <option>GASPE</option>
-      <option>HAVRE ST-PIERRE</option>
-      <option>ILE AUX PERROQUETS</option>
-      <option>ILE BICQUETTE</option>
-      <option>ILE D'ORLEANS</option>
-      <option>ILE ROUGE</option>
-      <option>ILES DE LA MADELEINE (AU8)</option>
-      <option>JONQUIERE</option>
-      <option>KUUJJUARAPIK</option>
-      <option>L'ACADIE</option>
-      <option>L'ASSOMPTION</option>
-      <option>LA GRANDE IV</option>
-      <option>LA GRANDE RIVIERE</option>
-      <option>LA TUQUE</option>
-      <option>LAC EON</option>
-      <option>LEMIEUX</option>
-      <option>MANIWAKI</option>
-      <option>MATAGAMI</option>
-      <option>MCTAVISH</option>
-      <option>MIRABEL</option>
-      <option>MISTOOK</option>
-      <option>MONT JOLI</option>
-      <option>MONT ORFORD</option>
-      <option>MONTREAL (DORVAL)</option>
-      <option>NATASHQUAN</option>
-      <option>NEW CARLISLE</option>
-      <option>NICOLET</option>
-      <option>NORMANDIN</option>
-      <option>OTTAWA</option>
-      <option>PARENT</option>
-      <option>POINT CLAVEAU</option>
-      <option>POINTE DES MONTS</option>
-      <option>QUEBEC</option>
-      <option>RIVIERE DU LOUP</option>
-      <option>ROBERVAL</option>
-      <option>ROQUEMAURE</option>
-      <option>ROUYN</option>
-      <option>ROUYN (AU7)</option>
-      <option>SCHEFFERVILLE</option>
-      <option>SEPT-ILES</option>
-      <option>SHERBROOKE</option>
-      <option>ST-ANICET</option>
-      <option>ST-HUBERT</option>
-      <option>ST-JOVITE</option>
-      <option>STE-ANNE-DE-BELLEVUE</option>
-      <option>STE-CLOTHILDE</option>
-      <option>TROIS RIVIERES</option>
-      <option>VAL D'OR</option>
-      <option>VALCARTIER</option>
+    <label>Région / Ville</label>
+    <select id="sel-lieu" onchange="onLieuChange(this.value)" style="min-width:200px;">
+      <option value="">-- Choisir un lieu --</option>
+      <optgroup label="Saguenay–Lac-Saint-Jean">
+        <option value="48.4333,-71.0667">Saguenay (Jonquière)</option>
+        <option value="48.3167,-70.9833">Saguenay (Chicoutimi)</option>
+        <option value="48.5200,-72.2667">Roberval</option>
+        <option value="48.8333,-72.5333">Normandin</option>
+        <option value="49.7833,-74.5667">Chibougamau</option>
+      </optgroup>
+      <optgroup label="Capitale-Nationale">
+        <option value="46.8139,-71.2081">Québec</option>
+        <option value="47.0667,-70.7667">Cap Tourmente</option>
+        <option value="46.9167,-71.5000">Valcartier</option>
+      </optgroup>
+      <optgroup label="Côte-Nord">
+        <option value="49.1333,-68.2000">Baie-Comeau</option>
+        <option value="50.2167,-66.2667">Sept-Îles</option>
+        <option value="50.2817,-63.5972">Havre-Saint-Pierre</option>
+        <option value="50.1900,-61.7890">Natashquan</option>
+      </optgroup>
+      <optgroup label="Montréal">
+        <option value="45.5017,-73.5673">Montréal</option>
+        <option value="45.4700,-73.7490">Montréal (Dorval)</option>
+        <option value="45.5170,-73.4170">Saint-Hubert</option>
+      </optgroup>
+      <optgroup label="Estrie">
+        <option value="45.4380,-71.6870">Sherbrooke</option>
+        <option value="45.3170,-72.2170">Mont Orford</option>
+      </optgroup>
+      <optgroup label="Laurênetides">
+        <option value="46.1170,-74.6000">Saint-Jovite</option>
+        <option value="46.3830,-75.9830">Maniwaki</option>
+      </optgroup>
+      <optgroup label="Abitibi-Témiscamingue">
+        <option value="48.2670,-79.0170">Rouyn-Noranda</option>
+        <option value="48.0530,-77.7830">Val-d'Or</option>
+        <option value="49.7500,-77.6330">Matagami</option>
+      </optgroup>
+      <optgroup label="Gaspésie">
+        <option value="48.7750,-64.4790">Gaspé</option>
+        <option value="48.0000,-65.3170">New Carlisle</option>
+        <option value="49.1000,-66.6830">Cap-Chat</option>
+      </optgroup>
+      <optgroup label="Chaudière-Appalaches">
+        <option value="46.2130,-70.7760">Beauceville</option>
+        <option value="46.2170,-72.6170">Nicolet</option>
+      </optgroup>
+      <optgroup label="Bas-Saint-Laurent">
+        <option value="47.8000,-69.5330">Rivière-du-Loup</option>
+        <option value="48.6000,-68.2170">Mont-Joli</option>
+      </optgroup>
+      <optgroup label="Nord-du-Québec">
+        <option value="55.2830,-77.7670">Kuujjuarapik</option>
+        <option value="54.8000,-66.8170">Schefferville</option>
+        <option value="53.6330,-77.7000">La Grande Rivière</option>
+      </optgroup>
+      <optgroup label="Outaouais">
+        <option value="45.3220,-75.6690">Ottawa-Gatineau</option>
+      </optgroup>
     </select>
   </div>
 
+  <!-- Coordonnées GPS -->
   <div class="sel-group">
-    <label>Variable</label>
-    <select id="sel-variable">
-      <option value="t">Température sèche (°C)</option>
-      <option value="tf">Température humide (°C)</option>
-      <option value="hr">Humidité relative (%)</option>
-      <option value="pa">Pression atmosphérique (hPa)</option>
-      <option value="rs">Rayonnement solaire (kJ/m²/h)</option>
-      <option value="vv">Vitesse du vent (km/h)</option>
-      <option value="dv">Direction du vent (°)</option>
-    </select>
-  </div>
-
-  <div class="sel-group">
-    <label>Période rapide</label>
-    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
-      <button class="btn-period active" id="btn-7j"    onclick="setPeriod(7, this)">7 j</button>
-      <button class="btn-period"        id="btn-30j"   onclick="setPeriod(30, this)">30 j</button>
-      <button class="btn-period"        id="btn-90j"   onclick="setPeriod(90, this)">3 mois</button>
-      <button class="btn-period"        id="btn-365j"  onclick="setPeriod(365, this)">1 an</button>
-      <button class="btn-period"        id="btn-perso" onclick="setPeriod(0, this)">Perso.</button>
-      <span class="date-max-badge" id="badge-date-max">⏳ Vérification…</span>
+    <label>Coordonnées GPS</label>
+    <div class="coords-inputs">
+      <input type="number" id="sel-lat" placeholder="Latitude" step="0.0001" min="44" max="63" value="48.4333" style="width:100px;">
+      <span>,</span>
+      <input type="number" id="sel-lon" placeholder="Longitude" step="0.0001" min="-80" max="-57" value="-71.0667" style="width:105px;">
     </div>
   </div>
 
+  <!-- Variable -->
+  <div class="sel-group">
+    <label>Variable</label>
+    <select id="sel-variable">
+      <option value="temperature_2m_mean">Température moyenne (°C)</option>
+      <option value="temperature_2m_max">Température maximale (°C)</option>
+      <option value="temperature_2m_min">Température minimale (°C)</option>
+      <option value="precipitation_sum">Précipitations (mm)</option>
+      <option value="snowfall_sum">Chutes de neige (cm)</option>
+      <option value="wind_speed_10m_max">Vitesse du vent max (km/h)</option>
+      <option value="wind_direction_10m_dominant">Direction du vent (°)</option>
+      <option value="relative_humidity_2m_mean">Humidité relative (%)</option>
+      <option value="shortwave_radiation_sum">Rayonnement solaire (MJ/m²)</option>
+    </select>
+  </div>
+
+  <!-- Période rapide -->
+  <div class="sel-group">
+    <label>Période rapide</label>
+    <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center;">
+      <button class="btn-period" onclick="setPeriod(30, this)">30 j</button>
+      <button class="btn-period active" onclick="setPeriod(365, this)">1 an</button>
+      <button class="btn-period" onclick="setPeriod(1825, this)">5 ans</button>
+      <button class="btn-period" onclick="setPeriod(3650, this)">10 ans</button>
+      <button class="btn-period" onclick="setPeriod(0, this)">Perso.</button>
+    </div>
+  </div>
+
+  <!-- Dates personnalisées -->
   <div class="sel-group" id="custom-dates" style="display:none;">
     <label>Du / Au</label>
     <div class="sel-dates">
@@ -824,6 +322,7 @@ body.page-accueil .status-bar {
     </div>
   </div>
 
+  <!-- Bouton -->
   <div class="sel-group" style="justify-content:flex-end;">
     <label>&nbsp;</label>
     <button class="btn-charger" id="btn-charger" onclick="chargerDonnees()">
@@ -849,66 +348,42 @@ body.page-accueil .status-bar {
 
 <!-- ══ BARRE D'ÉTAT ══ -->
 <div class="status-bar" id="status-bar">
-  <div class="stat">
-    <span class="stat-val" id="s-station">—</span>
-    <span class="stat-lbl">Station</span>
-  </div>
+  <div class="stat"><span class="stat-val" id="s-lieu">—</span><span class="stat-lbl">Lieu</span></div>
   <div class="stat-divider"></div>
-  <div class="stat">
-    <span class="stat-val" id="s-periode">—</span>
-    <span class="stat-lbl">Période</span>
-  </div>
+  <div class="stat"><span class="stat-val" id="s-periode">—</span><span class="stat-lbl">Période</span></div>
   <div class="stat-divider"></div>
-  <div class="stat">
-    <span class="stat-val" id="s-enregistrements">—</span>
-    <span class="stat-lbl">Enregistrements</span>
-  </div>
+  <div class="stat"><span class="stat-val" id="s-enregistrements">—</span><span class="stat-lbl">Jours</span></div>
   <div class="stat-divider"></div>
-  <div class="stat">
-    <span class="stat-val" id="s-min">—</span>
-    <span class="stat-lbl">Min</span>
-  </div>
+  <div class="stat"><span class="stat-val" id="s-min">—</span><span class="stat-lbl" id="lbl-min">Min</span></div>
   <div class="stat-divider"></div>
-  <div class="stat">
-    <span class="stat-val" id="s-moy">—</span>
-    <span class="stat-lbl">Moyenne</span>
-  </div>
+  <div class="stat"><span class="stat-val" id="s-moy">—</span><span class="stat-lbl" id="lbl-moy">Moyenne</span></div>
   <div class="stat-divider"></div>
-  <div class="stat">
-    <span class="stat-val" id="s-max">—</span>
-    <span class="stat-lbl">Max</span>
-  </div>
+  <div class="stat"><span class="stat-val" id="s-max">—</span><span class="stat-lbl" id="lbl-max">Max</span></div>
 </div>
 
 <!-- ══════════ PAGE ACCUEIL ══════════ -->
 <div class="page active" id="page-accueil">
   <div class="accueil-wrap">
-
-    
-
     <div class="accueil-cards">
       <div class="accueil-card" onclick="showPage('graphique')">
         <h3>Graphique</h3>
-        <p>Visualisez l'évolution d'une variable météo dans le temps pour la station sélectionnée.</p>
+        <p>Visualisez l'évolution d'une variable météo dans le temps pour un lieu donné, de 1940 à aujourd'hui.</p>
         <span class="accueil-card-link">Voir le graphique →</span>
       </div>
       <div class="accueil-card" onclick="showPage('carte')">
         <h3>Carte</h3>
-        <p>Localisez les 59 stations sur une carte et visualisez la valeur moyenne de la variable choisie par station.</p>
+        <p>Cliquez sur n'importe quel point du Québec pour en afficher les données météorologiques.</p>
         <span class="accueil-card-link">Voir la carte →</span>
       </div>
     </div>
-
     <div class="accueil-tableau-btn">
-      <p>Consultez les données brutes heure par heure : filtrez par date, triez les colonnes et téléchargez les résultats en format CSV.</p>
-      <button class="btn-tableau" onclick="showPage('tableau')">Accès au tableau de données</button>
+      <p>Consultez les données brutes jour par jour : filtrez, triez et téléchargez en CSV.</p>
+      <button class="btn-tableau" onclick="showPage('tableau')">&#8862; Accès au tableau</button>
     </div>
-
     <div class="accueil-tableau-btn">
-      <p>Données météorologiques horaires provenant de <strong>59 stations</strong> d'Environnement Canada au Québec, traitées et diffusées par Hydro-Québec. Variables disponibles : <span class="variables-grid" style="display:inline-flex; margin-top:0.4rem;"><span class="var-chip">Temp. sèche</span> <span class="var-chip">Temp. humide</span> <span class="var-chip">Humidité</span> <span class="var-chip">Pression</span> <span class="var-chip">Rayonnement</span> <span class="var-chip">Vent</span></span></p>
-      <a href="https://donnees.hydroquebec.com/explore/dataset/historique-donnees-meteo/" target="_blank" rel="noopener" class="btn-tableau">Source HQ →</a>
+      <p>Données issues de la réanalyse <strong>ERA5</strong> d'ECMWF via <strong>Open-Meteo</strong>. Couverture mondiale, résolution 0.25°, données quotidiennes de 1940 à aujourd'hui. Variables : <span style="display:inline-flex; gap:0.3rem; flex-wrap:wrap; margin-top:0.3rem;"><span class="var-chip">Temp. moy.</span><span class="var-chip">Temp. max</span><span class="var-chip">Temp. min</span><span class="var-chip">Précip.</span><span class="var-chip">Neige</span><span class="var-chip">Vent</span><span class="var-chip">Humidité</span><span class="var-chip">Rayonnement</span></span></p>
+      <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener" class="btn-tableau">Source Open-Meteo →</a>
     </div>
-
   </div>
 </div>
 
@@ -916,7 +391,7 @@ body.page-accueil .status-bar {
 <div class="page" id="page-graphique">
   <div class="page-placeholder" id="graphique-placeholder">
     <div class="ph-icon">📈</div>
-    <p>Sélectionnez une station et une période dans le panneau ci-dessus, puis cliquez sur <strong>Charger les données</strong> pour afficher le graphique.</p>
+    <p>Sélectionnez un lieu, une variable et une période, puis cliquez sur <strong>Charger les données</strong>.</p>
   </div>
   <div class="graphique-wrap" id="graphique-contenu" style="display:none;">
     <div class="graphique-header">
@@ -929,9 +404,7 @@ body.page-accueil .status-bar {
         <button class="btn-type"        onclick="setTypeGraphique('bar', this)">📊 Barres</button>
       </div>
     </div>
-    <div class="graphique-canvas-wrap">
-      <canvas id="monGraphique"></canvas>
-    </div>
+    <div class="graphique-canvas-wrap"><canvas id="monGraphique"></canvas></div>
     <div class="graphique-info" id="graphique-info"></div>
   </div>
 </div>
@@ -941,17 +414,10 @@ body.page-accueil .status-bar {
   <div class="carte-wrap">
     <div class="carte-header">
       <div>
-        <div class="carte-titre">Stations météorologiques — Québec</div>
-        <div class="carte-sous-titre" id="carte-sous-titre">59 stations · Cliquez sur un marqueur pour voir les données</div>
+        <div class="carte-titre">Exploration libre — Cliquez sur la carte</div>
+        <div class="carte-sous-titre" id="carte-sous-titre">Cliquez n'importe où au Québec pour afficher les données météo</div>
       </div>
       <div class="carte-controls">
-        <div class="sel-group">
-          <label>Date</label>
-          <div style="display:flex; gap:0.5rem; align-items:center;">
-            <input type="date" id="carte-date" style="min-width:150px;">
-            <button class="btn-charger" style="padding:7px 16px; font-size:0.75rem;" onclick="chargerCarte()">Appliquer</button>
-          </div>
-        </div>
         <span class="carte-loading" id="carte-loading">⏳ Chargement…</span>
       </div>
     </div>
@@ -961,29 +427,61 @@ body.page-accueil .status-bar {
 
 <!-- ══════════ PAGE TABLEAU ══════════ -->
 <div class="page" id="page-tableau">
-  <div class="page-placeholder">
-    <div class="ph-icon">⊞</div>
-    <p>Chargez des données pour consulter les enregistrements horaires dans le tableau et les télécharger en CSV.</p>
+  <div class="page-placeholder" id="tableau-placeholder">
+    <div class="ph-icon">&#8862;</div>
+    <p>Chargez des données pour consulter le tableau.</p>
   </div>
+  <div id="tableau-contenu" style="display:none; padding:1.5rem 2rem; max-width:960px; margin:0 auto;"></div>
 </div>
 
 <!-- ══ FOOTER ══ -->
 <footer>
   <p class="footer-source">
     Source des données :
-    <a href="https://donnees.hydroquebec.com/pages/accueil/" target="_blank" rel="noopener">
-      Hydro-Québec — Portail de données ouvertes
-    </a>
+    <a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener">Open-Meteo — Historical Weather API (ERA5/ECMWF)</a>
   </p>
   <p class="footer-credits">OTERAUD &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; Codage assisté par Claude (Anthropic)</p>
 </footer>
 
 <script>
-// ══ CONFIGURATION ══
-const API_URL = '/api/meteo';
-let ALL_DATA  = [];
-let DATE_MAX  = null;
-let DATE_MIN  = null;
+// ══ CONFIGURATION OPEN-METEO ══
+const API_BASE = 'https://archive-api.open-meteo.com/v1/archive';
+const VARIABLES_DAILY = [
+  'temperature_2m_mean',
+  'temperature_2m_max',
+  'temperature_2m_min',
+  'precipitation_sum',
+  'snowfall_sum',
+  'wind_speed_10m_max',
+  'wind_direction_10m_dominant',
+  'relative_humidity_2m_mean',
+  'shortwave_radiation_sum'
+].join(',');
+
+const VAR_LABELS = {
+  temperature_2m_mean:           'Température moyenne (°C)',
+  temperature_2m_max:            'Température maximale (°C)',
+  temperature_2m_min:            'Température minimale (°C)',
+  precipitation_sum:             'Précipitations (mm)',
+  snowfall_sum:                  'Chutes de neige (cm)',
+  wind_speed_10m_max:            'Vitesse du vent max (km/h)',
+  wind_direction_10m_dominant:   'Direction du vent (°)',
+  relative_humidity_2m_mean:     'Humidité relative (%)',
+  shortwave_radiation_sum:       'Rayonnement solaire (MJ/m²)'
+};
+
+const VAR_UNITES = {
+  temperature_2m_mean: '°C', temperature_2m_max: '°C', temperature_2m_min: '°C',
+  precipitation_sum: ' mm', snowfall_sum: ' cm',
+  wind_speed_10m_max: ' km/h', wind_direction_10m_dominant: '°',
+  relative_humidity_2m_mean: '%', shortwave_radiation_sum: ' MJ/m²'
+};
+
+let ALL_DATA   = []; // { date, [variable]: valeur, ... }
+let activePeriodDays = 365;
+let lastLat = 48.4333;
+let lastLon = -71.0667;
+let lastLieu = 'Saguenay (Jonquière)';
 
 // ══ NAVIGATION ══
 function showPage(id) {
@@ -991,290 +489,187 @@ function showPage(id) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + id).classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(t => {
-    if (t.textContent.toLowerCase().includes(
-      id === 'accueil' ? 'accueil' : id === 'graphique' ? 'graphique'
-      : id === 'carte' ? 'carte' : 'tableau')) {
+    if (t.textContent.toLowerCase().includes(id === 'accueil' ? 'accueil' : id === 'graphique' ? 'graphique' : id === 'carte' ? 'carte' : 'tableau'))
       t.classList.add('active');
-    }
   });
-  // Afficher les filtres seulement hors accueil
   document.body.className = 'page-' + id;
-  // Initialiser la carte si on arrive sur cet onglet
-  if (id === 'carte') onPageCarte();
+  if (id === 'carte') initCarte();
 }
 
 // ══ UTILITAIRES ══
-function showLoader(msg, progress) {
-  document.getElementById('loader-bar').classList.add('visible');
-  document.getElementById('loader-msg').textContent      = msg;
-  document.getElementById('loader-progress').textContent = progress || '';
-}
-function hideLoader() {
-  document.getElementById('loader-bar').classList.remove('visible');
-  document.getElementById('loader-progress').textContent = '';
-}
-function showError(msg) {
-  document.getElementById('error-msg').textContent = msg;
-  document.getElementById('error-bar').classList.add('visible');
-}
-function cacherErreur() {
-  document.getElementById('error-bar').classList.remove('visible');
-}
+function showLoader(msg) { document.getElementById('loader-bar').classList.add('visible'); document.getElementById('loader-msg').textContent = msg; }
+function hideLoader() { document.getElementById('loader-bar').classList.remove('visible'); }
+function showError(msg) { document.getElementById('error-msg').textContent = msg; document.getElementById('error-bar').classList.add('visible'); }
+function cacherErreur() { document.getElementById('error-bar').classList.remove('visible'); }
 function fmtVal(v, variable) {
   if (v === null || v === undefined) return '—';
   const n = parseFloat(v);
   if (isNaN(n)) return '—';
-  const unites = { t: '°C', tf: '°C', hr: '%', pa: ' hPa', rs: ' kJ/m²/h', vv: ' km/h', dv: '°' };
-  return n.toFixed(1) + (unites[variable] || '');
+  return n.toFixed(1) + (VAR_UNITES[variable] || '');
+}
+function parseDate(str) { const p = str.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+function fmtDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+
+// ══ LIEU ══
+function onLieuChange(val) {
+  if (!val) return;
+  const [lat, lon] = val.split(',').map(Number);
+  document.getElementById('sel-lat').value = lat;
+  document.getElementById('sel-lon').value = lon;
+  // Nom du lieu
+  const opt = document.getElementById('sel-lieu');
+  lastLieu = opt.options[opt.selectedIndex].text;
+  lastLat = lat; lastLon = lon;
 }
 
-// ══ GESTION DES DATES ══
-let activePeriodDays = 7;
-
-// Parse YYYY-MM-DD en date locale (évite le décalage UTC)
-function parseDate(str) {
-  const parts = str.split('-').map(Number);
-  return new Date(parts[0], parts[1] - 1, parts[2]);
-}
-
-// Formate un objet Date en YYYY-MM-DD (date locale)
-function fmtDate(d) {
-  const y  = d.getFullYear();
-  const m  = String(d.getMonth() + 1).padStart(2, '0');
-  const j  = String(d.getDate()).padStart(2, '0');
-  return y + '-' + m + '-' + j;
-}
-
-function initDates() {
-  const fin   = DATE_MAX ? parseDate(DATE_MAX) : new Date();
-  const debut = new Date(fin);
-  debut.setDate(fin.getDate() - 7);
-  document.getElementById('date-fin').value   = fmtDate(fin);
-  document.getElementById('date-debut').value = fmtDate(debut);
-}
-
+// ══ PÉRIODE ══
 function setPeriod(days, btn) {
   document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   activePeriodDays = days;
-  const customDates = document.getElementById('custom-dates');
+  const custom = document.getElementById('custom-dates');
   if (days === 0) {
-    customDates.style.display = 'flex';
+    custom.style.display = 'flex';
   } else {
-    customDates.style.display = 'none';
-    const fin   = DATE_MAX ? parseDate(DATE_MAX) : new Date();
+    custom.style.display = 'none';
+    const fin   = new Date();
+    fin.setDate(fin.getDate() - 1); // hier (Open-Meteo se termine hier)
     const debut = new Date(fin);
-    debut.setDate(fin.getDate() - days);
+    debut.setDate(fin.getDate() - days + 1);
     document.getElementById('date-fin').value   = fmtDate(fin);
     document.getElementById('date-debut').value = fmtDate(debut);
   }
 }
 
-// ══ DATE MAX VIA NETLIFY ══
-async function chargerDateMax() {
-  const badge = document.getElementById('badge-date-max');
-  try {
-    // Récupérer date max ET date min en parallèle
-    const [resMax, resMin] = await Promise.all([
-      fetch('/api/meteo?dateMax=1'),
-      fetch('/api/meteo?dateMin=1')
-    ]);
-    if (!resMax.ok) throw new Error('HTTP ' + resMax.status);
-    const dataMax = await resMax.json();
-    const dataMin = resMin.ok ? await resMin.json() : {};
+// Initialisation des dates (1 an par défaut)
+(function() {
+  const fin   = new Date();
+  fin.setDate(fin.getDate() - 1);
+  const debut = new Date(fin);
+  debut.setFullYear(fin.getFullYear() - 1);
+  document.getElementById('date-fin').value   = fmtDate(fin);
+  document.getElementById('date-debut').value = fmtDate(debut);
+  document.getElementById('date-fin').setAttribute('max', fmtDate(fin));
+  document.getElementById('date-debut').setAttribute('min', '1940-01-01');
+})();
 
-    if (dataMax.dateMax) {
-      DATE_MAX = dataMax.dateMax;
-      // Appliquer max sur les deux champs de date
-      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
-      document.getElementById('date-debut').setAttribute('max', DATE_MAX);
-    } else {
-      throw new Error('dateMax absent');
-    }
-
-    if (dataMin.dateMin) {
-      DATE_MIN = dataMin.dateMin;
-      // Appliquer min sur les deux champs de date
-      document.getElementById('date-debut').setAttribute('min', DATE_MIN);
-      document.getElementById('date-fin').setAttribute('min', DATE_MIN);
-      badge.textContent = 'Données du ' + DATE_MIN + ' au ' + DATE_MAX;
-    } else {
-      badge.textContent = 'Données jusqu’au ' + DATE_MAX;
-    }
-
-  } catch (e) {
-    badge.textContent = 'Date inconnue';
-    console.warn('chargerDateMax :', e.message);
-  }
-  initDates();
-}
-
-// ══ CHARGEMENT VIA NETLIFY ══
+// ══ CHARGEMENT OPEN-METEO ══
 async function chargerDonnees() {
-  const station   = document.getElementById('sel-station').value;
-  const variable  = document.getElementById('sel-variable').value;
-  const dateDebut = document.getElementById('date-debut').value;
-  const dateFin   = document.getElementById('date-fin').value;
+  const lat = parseFloat(document.getElementById('sel-lat').value);
+  const lon = parseFloat(document.getElementById('sel-lon').value);
+  const variable   = document.getElementById('sel-variable').value;
+  const dateDebut  = document.getElementById('date-debut').value;
+  const dateFin    = document.getElementById('date-fin').value;
 
-  if (!station)               { showError('Veuillez choisir une station.'); return; }
-  if (!dateDebut || !dateFin) { showError('Veuillez définir une période.'); return; }
-  if (dateDebut > dateFin)    { showError('La date de début doit être antérieure à la date de fin.'); return; }
+  if (isNaN(lat) || isNaN(lon))   { showError('Veuillez saisir des coordonnées valides.'); return; }
+  if (!dateDebut || !dateFin)      { showError('Veuillez définir une période.'); return; }
+  if (dateDebut > dateFin)         { showError('La date de début doit être antérieure à la date de fin.'); return; }
+
+  // Récupérer le nom du lieu si coordonnées changées manuellement
+  lastLat = lat; lastLon = lon;
+  const selLieu = document.getElementById('sel-lieu');
+  if (selLieu.value) {
+    lastLieu = selLieu.options[selLieu.selectedIndex].text;
+  } else {
+    lastLieu = lat.toFixed(3) + '°N, ' + Math.abs(lon).toFixed(3) + '°O';
+  }
 
   cacherErreur();
   ALL_DATA = [];
   const btn = document.getElementById('btn-charger');
-  btn.disabled    = true;
+  btn.disabled = true;
   btn.textContent = '⏳ Chargement…';
+  showLoader('Connexion à Open-Meteo…');
 
   try {
-    showLoader('Connexion à l’API Hydro-Québec…');
-    const params = new URLSearchParams({ station, dateDebut, dateFin, variable });
-    const res    = await fetch(API_URL + '?' + params);
+    const url = API_BASE
+      + '?latitude='    + lat
+      + '&longitude='   + lon
+      + '&start_date='  + dateDebut
+      + '&end_date='    + dateFin
+      + '&daily='       + VARIABLES_DAILY
+      + '&timezone=America%2FToronto';
 
-    if (!res.ok) {
-      const err = await res.json().catch(function() { return { error: 'Erreur HTTP ' + res.status }; });
-      throw new Error(err.error || 'Erreur HTTP ' + res.status);
-    }
-
-    showLoader('Traitement des données…');
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error('Erreur API (' + res.status + ')');
     const data = await res.json();
 
-    if (!data.results || data.results.length === 0) {
-      const plage = DATE_MIN && DATE_MAX ? ' Les données disponibles vont du ' + DATE_MIN + ' au ' + DATE_MAX + '.' : '';
-      throw new Error('Aucune donnée trouvée pour ' + station + ' entre ' + dateDebut + ' et ' + dateFin + '.' + plage);
-    }
+    if (data.error) throw new Error(data.reason || 'Erreur inconnue');
 
-    ALL_DATA = data.results;
+    // Construire ALL_DATA : tableau de {date, variable1, variable2, ...}
+    const dates   = data.daily.time || [];
+    const varKeys = Object.keys(data.daily).filter(k => k !== 'time');
 
-    // Clés réelles retournées par l'API Hydro-Québec
-    const varKeys = {
-      t:  ['t', 't_c'],
-      tf: ['td', 'tf_c', 'tf'],
-      hr: ['hr'],
-      pa: ['psta', 'pa_hpa', 'pa'],
-      rs: ['rf1e', 'rs_kjm2h', 'rs'],
-      vv: ['vv'],
-      dv: ['vd', 'dv']
-    };
-    const candidates = varKeys[variable] || [variable];
-    let realKey = null;
-    for (const c of candidates) {
-      const found = Object.keys(ALL_DATA[0]).find(function(k) { return k.toLowerCase() === c.toLowerCase(); });
-      if (found) { realKey = found; break; }
-    }
-
-    const valeurs = ALL_DATA
-      .map(function(r) { return realKey ? parseFloat(r[realKey]) : null; })
-      .filter(function(v) { return v !== null && !isNaN(v); });
-
-    const vMin = valeurs.length ? Math.min.apply(null, valeurs) : null;
-    const vMax = valeurs.length ? Math.max.apply(null, valeurs) : null;
-    const vMoy = valeurs.length ? valeurs.reduce(function(a, b) { return a + b; }, 0) / valeurs.length : null;
-
-    document.getElementById('s-station').textContent         = station;
-    document.getElementById('s-periode').textContent         = dateDebut + ' → ' + dateFin;
-    document.getElementById('s-enregistrements').textContent = ALL_DATA.length.toLocaleString('fr-CA');
-    document.getElementById('s-min').textContent             = fmtVal(vMin, variable);
-    document.getElementById('s-moy').textContent             = fmtVal(vMoy, variable);
-    document.getElementById('s-max').textContent             = fmtVal(vMax, variable);
-    document.getElementById('status-bar').classList.add('visible');
-
-    const varLabels = {
-      t:  ['Min °C','Moy. °C','Max °C'],
-      tf: ['Min °C','Moy. °C','Max °C'],
-      hr: ['Min %','Moy. %','Max %'],
-      pa: ['Min hPa','Moy. hPa','Max hPa'],
-      rs: ['Min kJ/m²/h','Moy. kJ/m²/h','Max kJ/m²/h'],
-      vv: ['Min km/h','Moy. km/h','Max km/h'],
-      dv: ['Min °','Moy. °','Max °']
-    };
-    const lbls = varLabels[variable] || ['Min','Moy.','Max'];
-    const statEls = document.querySelectorAll('#status-bar .stat .stat-lbl');
-    if (statEls[3]) statEls[3].textContent = lbls[0];
-    if (statEls[4]) statEls[4].textContent = lbls[1];
-    if (statEls[5]) statEls[5].textContent = lbls[2];
-
-    const nRec = ALL_DATA.length.toLocaleString('fr-CA');
-    ['graphique', 'carte', 'tableau'].forEach(function(id) {
-      const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
-      if (ph) ph.innerHTML = '<strong>' + nRec + ' enregistrements</strong> chargés pour <strong>' + station + '</strong>.<br>Variable détectée : <code>' + (realKey || '?') + '</code>';
+    ALL_DATA = dates.map(function(date, i) {
+      const row = { date: date };
+      varKeys.forEach(function(k) { row[k] = data.daily[k][i]; });
+      return row;
     });
 
-    // Afficher le graphique
-    afficherGraphique(station, variable, realKey);
+    if (ALL_DATA.length === 0) throw new Error('Aucune donnée disponible pour cette période.');
 
+    // Statistiques pour la variable choisie
+    const vals = ALL_DATA.map(r => r[variable]).filter(v => v !== null && !isNaN(v));
+    const vMin = vals.length ? Math.min(...vals) : null;
+    const vMax = vals.length ? Math.max(...vals) : null;
+    const vMoy = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
 
-    console.log('Données chargées :', ALL_DATA.length, 'enregistrements');
-    console.log('Clé variable :', realKey);
+    const unite = VAR_UNITES[variable] || '';
+    document.getElementById('s-lieu').textContent          = lastLieu;
+    document.getElementById('s-periode').textContent       = dateDebut + ' → ' + dateFin;
+    document.getElementById('s-enregistrements').textContent = ALL_DATA.length.toLocaleString('fr-CA');
+    document.getElementById('s-min').textContent           = vMin !== null ? vMin.toFixed(1) + unite : '—';
+    document.getElementById('s-moy').textContent           = vMoy !== null ? vMoy.toFixed(1) + unite : '—';
+    document.getElementById('s-max').textContent           = vMax !== null ? vMax.toFixed(1) + unite : '—';
+    document.getElementById('lbl-min').textContent         = 'Min ' + unite.trim();
+    document.getElementById('lbl-moy').textContent         = 'Moy. ' + unite.trim();
+    document.getElementById('lbl-max').textContent         = 'Max ' + unite.trim();
+    document.getElementById('status-bar').classList.add('visible');
+
+    afficherGraphique(lastLieu, variable);
+    afficherTableau(variable);
+
+    console.log('✅ Open-Meteo :', ALL_DATA.length, 'jours chargés');
 
   } catch (err) {
     showError('Erreur : ' + err.message);
     console.error(err);
   } finally {
     hideLoader();
-    btn.disabled    = false;
+    btn.disabled = false;
     btn.textContent = '⬇ Charger les données';
   }
 }
 
-// ══ GRAPHIQUE (Chart.js) ══
-let monChart        = null;
-let typeGraphique   = 'line';
-let lastStation     = '';
-let lastVariable    = '';
-let lastRealKey     = '';
+// ══ GRAPHIQUE ══
+let monChart      = null;
+let typeGraphique = 'line';
+let lastVariable  = '';
+let lastLieuGraph = '';
 
-const LABELS_VAR = {
-  t:  'Température sèche (°C)',
-  tf: 'Température humide (°C)',
-  hr: 'Humidité relative (%)',
-  pa: 'Pression atmosphérique (hPa)',
-  rs: 'Rayonnement solaire (kJ/m²/h)',
-  vv: 'Vitesse du vent (km/h)',
-  dv: 'Direction du vent (°)'
-};
-
-function afficherGraphique(station, variable, realKey) {
-  lastStation   = station;
+function afficherGraphique(lieu, variable) {
+  lastLieuGraph = lieu;
   lastVariable  = variable;
-  lastRealKey   = realKey;
 
-  // Basculer placeholder vers contenu
   document.getElementById('graphique-placeholder').style.display = 'none';
   document.getElementById('graphique-contenu').style.display     = 'block';
 
-  const varLabel = LABELS_VAR[variable] || variable;
-  document.getElementById('graphique-titre').textContent      = varLabel + ' — ' + station;
-  document.getElementById('graphique-sous-titre').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' enregistrements';
+  const varLabel = VAR_LABELS[variable] || variable;
+  document.getElementById('graphique-titre').textContent      = varLabel + ' — ' + lieu;
+  document.getElementById('graphique-sous-titre').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' jours';
 
-  // Labels axe X : date + heure
-  const labels = ALL_DATA.map(function(r) {
-    const date  = (r.date_locale || '').substring(0, 10);
-    const heure = r.heure_locale !== undefined ? String(r.heure_locale).padStart(2, '0') + 'h' : '';
-    return date + (heure ? ' ' + heure : '');
-  });
-
-  // Valeurs Y
-  const valeurs = ALL_DATA.map(function(r) {
-    if (!realKey) return null;
-    var v = parseFloat(r[realKey]);
-    return isNaN(v) ? null : v;
-  });
+  const labels  = ALL_DATA.map(r => r.date);
+  const valeurs = ALL_DATA.map(r => r[variable] !== null ? parseFloat(r[variable]) : null);
 
   // Réduire les labels si trop de points
-  const step = Math.ceil(labels.length / 48);
-  const labelsReduits = labels.map(function(l, i) { return i % step === 0 ? l : ''; });
+  const step = Math.ceil(labels.length / 60);
+  const labelsReduits = labels.map((l, i) => i % step === 0 ? l : '');
 
   const dataset = typeGraphique === 'line'
-    ? { label: varLabel, data: valeurs,
-        borderColor: '#62878b', backgroundColor: 'rgba(98,135,139,0.12)',
-        borderWidth: 1.5, pointRadius: valeurs.length > 200 ? 0 : 2,
-        pointHoverRadius: 4, fill: true, tension: 0.3 }
-    : { label: varLabel, data: valeurs,
-        backgroundColor: '#62878b', borderRadius: 3, borderSkipped: false };
+    ? { label: varLabel, data: valeurs, borderColor: '#62878b', backgroundColor: 'rgba(98,135,139,0.12)', borderWidth: 1.5, pointRadius: valeurs.length > 300 ? 0 : 2, pointHoverRadius: 4, fill: true, tension: 0.3, spanGaps: true }
+    : { label: varLabel, data: valeurs, backgroundColor: '#62878b', borderRadius: 2, borderSkipped: false };
 
   if (monChart) { monChart.destroy(); monChart = null; }
-
   const ctx = document.getElementById('monGraphique').getContext('2d');
   monChart = new Chart(ctx, {
     type: typeGraphique,
@@ -1287,240 +682,171 @@ function afficherGraphique(station, variable, realKey) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            title: function(items) { return labels[items[0].dataIndex]; },
-            label: function(item) {
-              var v = item.raw;
+            title: items => labels[items[0].dataIndex],
+            label: item => {
+              const v = item.raw;
               if (v === null || isNaN(v)) return 'Donnée manquante';
-              return varLabel + ' : ' + v.toFixed(1);
+              return varLabel + ' : ' + v.toFixed(1) + (VAR_UNITES[variable] || '');
             }
           }
         }
       },
       scales: {
-        x: {
-          ticks: { font: { family: 'Montserrat', size: 10 }, color: '#999', maxRotation: 45 },
-          grid:  { color: 'rgba(0,0,0,0.04)' }
-        },
-        y: {
-          ticks: { font: { family: 'Montserrat', size: 11 }, color: '#666' },
-          grid:  { color: 'rgba(0,0,0,0.06)' },
-          title: { display: true, text: varLabel, font: { family: 'Montserrat', size: 11 }, color: '#888' }
-        }
+        x: { ticks: { font: { family: 'Montserrat', size: 10 }, color: '#999', maxRotation: 45 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: { ticks: { font: { family: 'Montserrat', size: 11 }, color: '#666' }, grid: { color: 'rgba(0,0,0,0.06)' }, title: { display: true, text: varLabel, font: { family: 'Montserrat', size: 11 }, color: '#888' } }
       }
     }
   });
-
-  document.getElementById('graphique-info').textContent =
-    'Survol pour détails — ' + ALL_DATA.length.toLocaleString('fr-CA') + ' points';
+  document.getElementById('graphique-info').textContent = 'Survol pour détails — ' + ALL_DATA.length.toLocaleString('fr-CA') + ' points';
 }
 
 function setTypeGraphique(type, btn) {
   typeGraphique = type;
-  document.querySelectorAll('.btn-type').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.btn-type').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (ALL_DATA.length > 0 && lastRealKey) {
-    afficherGraphique(lastStation, lastVariable, lastRealKey);
-  }
+  if (ALL_DATA.length > 0 && lastVariable) afficherGraphique(lastLieuGraph, lastVariable);
+}
+
+// ══ TABLEAU ══
+function afficherTableau(variable) {
+  const varLabel = VAR_LABELS[variable] || variable;
+  const ph = document.getElementById('tableau-placeholder');
+  const ct = document.getElementById('tableau-contenu');
+  ph.style.display = 'none';
+  ct.style.display = 'block';
+
+  const rows = ALL_DATA.slice(0, 500); // limiter l'affichage à 500 lignes
+  let html = '<h3 style="font-size:0.88rem;font-weight:700;color:var(--teal);margin-bottom:0.75rem;">'
+    + lastLieuGraph + ' — ' + varLabel + '</h3>';
+  html += '<div style="overflow-x:auto;">';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">';
+  html += '<thead><tr style="background:var(--teal);color:#fff;">';
+  html += '<th style="padding:8px 12px;text-align:left;font-weight:700;">Date</th>';
+  Object.keys(VAR_LABELS).forEach(function(k) {
+    html += '<th style="padding:8px 12px;text-align:right;font-weight:700;white-space:nowrap;">' + VAR_LABELS[k].split(' ')[0] + '</th>';
+  });
+  html += '</tr></thead><tbody>';
+  rows.forEach(function(r, i) {
+    const bg = i % 2 === 0 ? '#fff' : 'var(--creme-light)';
+    html += '<tr style="background:' + bg + ';">';
+    html += '<td style="padding:6px 12px;font-weight:600;">' + r.date + '</td>';
+    Object.keys(VAR_LABELS).forEach(function(k) {
+      const v = r[k] !== null && r[k] !== undefined ? parseFloat(r[k]).toFixed(1) : '—';
+      html += '<td style="padding:6px 12px;text-align:right;">' + v + '</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  if (ALL_DATA.length > 500) html += '<p style="font-size:0.72rem;color:#aaa;margin-top:0.5rem;text-align:right;">Affichage limité aux 500 premiers jours.</p>';
+  ct.innerHTML = html;
 }
 
 // ══ CARTE LEAFLET ══
-const STATIONS_COORDS = {
-  'BAGOTVILLE':              [48.330, -70.996],
-  'BAIE COMEAU':             [49.133, -68.200],
-  'BEAUCEVILLE':             [46.213, -70.776],
-  'BONNARD':                 [49.817, -74.567],
-  'CAP CHAT':                [49.100, -66.683],
-  "CAP D'ESPOIR":            [48.417, -64.317],
-  'CAP MADELEINE':           [49.250, -65.317],
-  'CAP TOURMENTE':           [47.067, -70.767],
-  'CHIBOUGAMAU-CHAPAIS':     [49.771, -74.528],
-  'FRELIGHSBURG':            [45.050, -72.833],
-  'GASPE':                   [48.775, -64.479],
-  'HAVRE ST-PIERRE':         [50.281, -63.597],
-  'ILE AUX PERROQUETS':      [50.217, -64.183],
-  'ILE BICQUETTE':           [48.883, -68.700],
-  "ILE D'ORLEANS":           [46.967, -70.950],
-  'ILE ROUGE':               [47.750, -69.567],
-  'ILES DE LA MADELEINE (AU8)': [47.424, -61.799],
-  'JONQUIERE':               [48.417, -71.133],
-  'KUUJJUARAPIK':            [55.283, -77.767],
-  "L'ACADIE":                [45.294, -73.349],
-  "L'ASSOMPTION":            [45.817, -73.433],
-  'LA GRANDE IV':            [53.750, -73.667],
-  'LA GRANDE RIVIERE':       [53.633, -77.700],
-  'LA TUQUE':                [47.433, -72.783],
-  'LAC EON':                 [51.867, -63.233],
-  'LEMIEUX':                 [46.233, -72.400],
-  'MANIWAKI':                [46.383, -75.983],
-  'MATAGAMI':                [49.750, -77.633],
-  'MCTAVISH':                [45.505, -73.578],
-  'MIRABEL':                 [45.679, -74.037],
-  'MISTOOK':                 [46.717, -71.617],
-  'MONT JOLI':               [48.600, -68.217],
-  'MONT ORFORD':             [45.317, -72.217],
-  'MONTREAL (DORVAL)':       [45.470, -73.749],
-  'NATASHQUAN':              [50.190, -61.789],
-  'NEW CARLISLE':            [48.000, -65.317],
-  'NICOLET':                 [46.217, -72.617],
-  'NORMANDIN':               [48.833, -72.533],
-  'OTTAWA':                  [45.322, -75.669],
-  'PARENT':                  [47.917, -74.617],
-  'POINT CLAVEAU':           [48.233, -69.817],
-  'POINTE DES MONTS':        [49.317, -67.383],
-  'QUEBEC':                  [46.800, -71.383],
-  'RIVIERE DU LOUP':         [47.800, -69.533],
-  'ROBERVAL':                [48.517, -72.267],
-  'ROQUEMAURE':              [48.783, -79.600],
-  'ROUYN':                   [48.267, -79.017],
-  'ROUYN (AU7)':             [48.250, -79.033],
-  'SCHEFFERVILLE':           [54.800, -66.817],
-  'SEPT-ILES':               [50.217, -66.267],
-  'SHERBROOKE':              [45.438, -71.687],
-  'ST-ANICET':               [45.117, -74.367],
-  'ST-HUBERT':               [45.517, -73.417],
-  'ST-JOVITE':               [46.117, -74.600],
-  'STE-ANNE-DE-BELLEVUE':    [45.400, -73.933],
-  'STE-CLOTHILDE':           [45.167, -73.683],
-  'TROIS RIVIERES':          [46.350, -72.517],
-  "VAL D'OR":                [48.053, -77.783],
-  'VALCARTIER':              [46.917, -71.500]
-};
+let maCarte = null;
+let carteInit = false;
 
-let maCarte      = null;
-let carteMarkers = {}; // { NOM_STATION: marker }
-let donneesJour  = {}; // { NOM_STATION: { t, td, hr, psta, rf1e, vv, vd } }
-let carteInitialisee = false;
-
-// Initialiser la carte Leaflet (une seule fois)
 function initCarte() {
-  if (carteInitialisee) return;
-  carteInitialisee = true;
-  maCarte = L.map('ma-carte', { zoomControl: true }).setView([50.5, -72], 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    maxZoom: 13
-  }).addTo(maCarte);
-
-  // Créer les 59 marqueurs immédiatement
-  Object.entries(STATIONS_COORDS).forEach(function(entry) {
-    const nom    = entry[0];
-    const coords = entry[1];
-    const marker = L.circleMarker(coords, {
-      radius: 7,
-      fillColor: '#62878b',
-      color: '#fff',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.85
-    }).addTo(maCarte);
-    marker.bindTooltip(nom, { permanent: false, direction: 'top', className: 'leaflet-tooltip-station' });
-    marker.bindPopup(buildPopup(nom, null), { maxWidth: 280 });
-    marker.on('click', function() {
-      marker.openPopup();
-    });
-    carteMarkers[nom] = marker;
-  });
-}
-
-// Construire le contenu HTML du popup
-function buildPopup(nom, data) {
-  const date = document.getElementById('carte-date') ? document.getElementById('carte-date').value : '—';
-  if (!data) {
-    return '<div class="popup-station-nom">' + nom + '</div>'
-      + '<div class="popup-date">' + date + '</div>'
-      + '<div style="color:#aaa;font-size:0.8rem;">Aucune donnée chargée.<br>Cliquez sur Appliquer.</div>';
-  }
-  function fmt(v, u) { return (v !== null && !isNaN(v)) ? parseFloat(v).toFixed(1) + u : '—'; }
-  return '<div class="popup-station-nom">' + nom + '</div>'
-    + '<div class="popup-date">' + date + '</div>'
-    + '<div class="popup-vars">'
-    + '<div class="popup-var"><span class="popup-var-label">Temp. sèche</span><span class="popup-var-val">' + fmt(data.t, '°C') + '</span></div>'
-    + '<div class="popup-var"><span class="popup-var-label">Temp. humide</span><span class="popup-var-val">' + fmt(data.td, '°C') + '</span></div>'
-    + '<div class="popup-var"><span class="popup-var-label">Humidité</span><span class="popup-var-val">' + fmt(data.hr, '%') + '</span></div>'
-    + '<div class="popup-var"><span class="popup-var-label">Pression</span><span class="popup-var-val">' + fmt(data.psta, ' hPa') + '</span></div>'
-    + '<div class="popup-var"><span class="popup-var-label">Rayonnement</span><span class="popup-var-val">' + fmt(data.rf1e, ' kJ/m²/h') + '</span></div>'
-    + '<div class="popup-var"><span class="popup-var-label">Vent</span><span class="popup-var-val">' + fmt(data.vv, ' km/h') + '</span></div>'
-    + '<div class="popup-var"><span class="popup-var-label">Dir. vent</span><span class="popup-var-val">' + fmt(data.vd, '°') + '</span></div>'
-    + '</div>';
-}
-
-// Mettre à jour les popups de tous les marqueurs
-function mettreAJourPopups() {
-  Object.entries(carteMarkers).forEach(function(entry) {
-    const nom    = entry[0];
-    const marker = entry[1];
-    const data   = donneesJour[nom] || null;
-    marker.setPopupContent(buildPopup(nom, data));
-    // Changer la couleur si données disponibles
-    marker.setStyle({ fillColor: data ? '#f59e19' : '#62878b' });
-  });
-}
-
-// Charger les données pour une date précise (toutes stations)
-async function chargerCarte() {
-  const date = document.getElementById('carte-date').value;
-  if (!date) return;
-
-  document.getElementById('carte-loading').classList.add('visible');
-  document.getElementById('carte-sous-titre').textContent = '59 stations · ' + date;
-
-  try {
-    const res  = await fetch('/api/meteo?dateJour=' + date);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-
-    // Regrouper par station (moyenne de la journée)
-    donneesJour = {};
-    (data.results || []).forEach(function(r) {
-      const nom = r.station;
-      if (!nom) return;
-      if (!donneesJour[nom]) {
-        donneesJour[nom] = { t: [], td: [], hr: [], psta: [], rf1e: [], vv: [], vd: [] };
-      }
-      ['t','td','hr','psta','rf1e','vv','vd'].forEach(function(k) {
-        const found = Object.keys(r).find(function(rk) { return rk.toLowerCase() === k.toLowerCase(); });
-        if (found) {
-          const v = parseFloat(r[found]);
-          if (!isNaN(v)) donneesJour[nom][k].push(v);
-        }
-      });
-    });
-
-    // Calculer les moyennes
-    Object.keys(donneesJour).forEach(function(nom) {
-      const d = donneesJour[nom];
-      ['t','td','hr','psta','rf1e','vv','vd'].forEach(function(k) {
-        d[k] = d[k].length ? d[k].reduce(function(a,b){return a+b;},0) / d[k].length : null;
-      });
-    });
-
-    mettreAJourPopups();
-
-  } catch(e) {
-    console.error('Erreur carte:', e.message);
-  } finally {
-    document.getElementById('carte-loading').classList.remove('visible');
-  }
-}
-
-// Appelée quand on clique sur l'onglet Carte
-function onPageCarte() {
+  if (carteInit) { setTimeout(() => maCarte && maCarte.invalidateSize(), 150); return; }
   setTimeout(function() {
-    initCarte();
+    carteInit = true;
+    maCarte = L.map('ma-carte').setView([52, -72], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap', maxZoom: 13
+    }).addTo(maCarte);
+
+    // Clic sur la carte = charger les données pour ce point
+    maCarte.on('click', async function(e) {
+      const lat = e.latlng.lat.toFixed(4);
+      const lon = e.latlng.lng.toFixed(4);
+
+      // Mettre à jour les champs de coordonnées
+      document.getElementById('sel-lat').value = lat;
+      document.getElementById('sel-lon').value = lon;
+      document.getElementById('sel-lieu').value = '';
+      lastLat = parseFloat(lat); lastLon = parseFloat(lon);
+      lastLieu = lat + '°N, ' + Math.abs(lon).toFixed(4) + '°O';
+
+      document.getElementById('carte-sous-titre').textContent = '⏳ Chargement pour ' + lastLieu + '…';
+      document.getElementById('carte-loading').classList.add('visible');
+
+      // Appel Open-Meteo pour 1 an
+      const fin   = new Date(); fin.setDate(fin.getDate() - 1);
+      const debut = new Date(fin); debut.setFullYear(fin.getFullYear() - 1);
+      const startDate = fmtDate(debut);
+      const endDate   = fmtDate(fin);
+
+      try {
+        const url = API_BASE
+          + '?latitude='   + lat
+          + '&longitude='  + lon
+          + '&start_date=' + startDate
+          + '&end_date='   + endDate
+          + '&daily='      + VARIABLES_DAILY
+          + '&timezone=America%2FToronto';
+
+        const res  = await fetch(url);
+        const data = await res.json();
+        if (data.error) throw new Error(data.reason);
+
+        const dates   = data.daily.time || [];
+        const varKeys = Object.keys(data.daily).filter(k => k !== 'time');
+        ALL_DATA = dates.map((date, i) => {
+          const row = { date };
+          varKeys.forEach(k => { row[k] = data.daily[k][i]; });
+          return row;
+        });
+
+        // Dernier jour disponible
+        const dernierJour = ALL_DATA[ALL_DATA.length - 1];
+
+        // Popup avec toutes les variables
+        function fv(k) {
+          const v = dernierJour[k];
+          return (v !== null && !isNaN(v)) ? parseFloat(v).toFixed(1) + (VAR_UNITES[k] || '') : '—';
+        }
+
+        const popupHtml = '<div class="popup-station-nom">' + lastLieu + '</div>'
+          + '<div class="popup-date">Dernière journée : ' + dernierJour.date + '</div>'
+          + '<div class="popup-vars">'
+          + '<div class="popup-var"><span class="popup-var-label">Temp. moy.</span><span class="popup-var-val">' + fv('temperature_2m_mean') + '</span></div>'
+          + '<div class="popup-var"><span class="popup-var-label">Temp. max</span><span class="popup-var-val">' + fv('temperature_2m_max') + '</span></div>'
+          + '<div class="popup-var"><span class="popup-var-label">Temp. min</span><span class="popup-var-val">' + fv('temperature_2m_min') + '</span></div>'
+          + '<div class="popup-var"><span class="popup-var-label">Précip.</span><span class="popup-var-val">' + fv('precipitation_sum') + '</span></div>'
+          + '<div class="popup-var"><span class="popup-var-label">Neige</span><span class="popup-var-val">' + fv('snowfall_sum') + '</span></div>'
+          + '<div class="popup-var"><span class="popup-var-label">Vent max</span><span class="popup-var-val">' + fv('wind_speed_10m_max') + '</span></div>'
+          + '<div class="popup-var"><span class="popup-var-label">Humidité</span><span class="popup-var-val">' + fv('relative_humidity_2m_mean') + '</span></div>'
+          + '<div class="popup-var"><span class="popup-var-label">Rayonnement</span><span class="popup-var-val">' + fv('shortwave_radiation_sum') + '</span></div>'
+          + '</div>'
+          + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--creme);">'
+          + '<button onclick="voirGraphiqueDepuisCarte()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-family:Montserrat,sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;width:100%;">Voir le graphique →</button>'
+          + '</div>';
+
+        L.popup({ maxWidth: 280 })
+          .setLatLng(e.latlng)
+          .setContent(popupHtml)
+          .openOn(maCarte);
+
+        document.getElementById('carte-sous-titre').textContent = 'Dernier clic : ' + lastLieu + ' — ' + ALL_DATA.length + ' jours chargés';
+
+      } catch(err) {
+        document.getElementById('carte-sous-titre').textContent = 'Erreur : ' + err.message;
+        console.error(err);
+      } finally {
+        document.getElementById('carte-loading').classList.remove('visible');
+      }
+    });
+
     maCarte.invalidateSize();
-    // Charger les données si DATE_MAX disponible et carte pas encore chargée
-    if (DATE_MAX && Object.keys(donneesJour).length === 0) {
-      document.getElementById('carte-date').value = DATE_MAX;
-      document.getElementById('carte-date').setAttribute('max', DATE_MAX);
-      if (DATE_MIN) document.getElementById('carte-date').setAttribute('min', DATE_MIN);
-      chargerCarte();
-    }
-  }, 150);
+  }, 200);
 }
 
-// ══ LANCEMENT — toujours en dernier ══
-chargerDateMax();
-</script>
+function voirGraphiqueDepuisCarte() {
+  const variable = document.getElementById('sel-variable').value;
+  maCarte.closePopup();
+  showPage('graphique');
+  if (ALL_DATA.length > 0) afficherGraphique(lastLieu, variable);
+}
 
+</script>
 </body>
 </html>
