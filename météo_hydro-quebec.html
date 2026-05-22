@@ -583,6 +583,69 @@ body.page-accueil .status-bar {
   color: #aaa;
   text-align: right;
 }
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+/* ══ PAGE CARTE ══ */
+.carte-wrap {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 280px);
+  min-height: 480px;
+  padding: 1.25rem 2rem;
+  max-width: 960px;
+  margin: 0 auto;
+  gap: 0.75rem;
+}
+.carte-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.carte-titre {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--teal);
+}
+.carte-sous-titre {
+  font-size: 0.75rem;
+  color: #888;
+  font-weight: 500;
+  margin-top: 2px;
+}
+.carte-toggle { display: flex; gap: 0.4rem; align-items: center; }
+.carte-loading {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--terre);
+  display: none;
+}
+.carte-loading.visible { display: block; }
+#ma-carte {
+  flex: 1;
+  border-radius: 12px;
+  border: 1.5px solid var(--creme);
+  overflow: hidden;
+  min-height: 400px;
+}
+.carte-legende {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #666;
+}
+.legende-item { display: flex; align-items: center; gap: 0.3rem; }
+.legende-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1.5px solid rgba(0,0,0,0.15);
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -843,9 +906,24 @@ body.page-accueil .status-bar {
 
 <!-- ══════════ PAGE CARTE ══════════ -->
 <div class="page" id="page-carte">
-  <div class="page-placeholder">
+  <div class="page-placeholder" id="carte-placeholder">
     <div class="ph-icon">🗺️</div>
-    <p>Chargez des données pour afficher les stations sur la carte et visualiser les valeurs moyennes par localisation.</p>
+    <p>Sélectionnez une variable et une période dans le panneau ci-dessus, puis cliquez sur <strong>Charger les données</strong> pour afficher la carte.</p>
+  </div>
+  <div class="carte-wrap" id="carte-contenu" style="display:none;">
+    <div class="carte-header">
+      <div>
+        <div class="carte-titre" id="carte-titre">—</div>
+        <div class="carte-sous-titre" id="carte-sous-titre">—</div>
+      </div>
+      <div class="carte-toggle">
+        <span class="carte-loading" id="carte-loading">⏳ Chargement toutes stations…</span>
+        <button class="btn-type active" id="btn-carte-moy"  onclick="setModeCarte('moy', this)">∑ Moyenne</button>
+        <button class="btn-type"        id="btn-carte-last" onclick="setModeCarte('last', this)">⏱ Dernière valeur</button>
+      </div>
+    </div>
+    <div id="ma-carte"></div>
+    <div class="carte-legende" id="carte-legende"></div>
   </div>
 </div>
 
@@ -1091,6 +1169,9 @@ async function chargerDonnees() {
     // Afficher le graphique
     afficherGraphique(station, variable, realKey);
 
+    // Lancer le chargement de la carte (toutes stations)
+    chargerCarte(variable, dateDebut, dateFin);
+
     console.log('Données chargées :', ALL_DATA.length, 'enregistrements');
     console.log('Clé variable :', realKey);
 
@@ -1208,6 +1289,235 @@ function setTypeGraphique(type, btn) {
   if (ALL_DATA.length > 0 && lastRealKey) {
     afficherGraphique(lastStation, lastVariable, lastRealKey);
   }
+}
+
+// ══ CARTE LEAFLET ══
+const STATIONS_COORDS = {
+  'BAGOTVILLE':              [48.330, -70.996],
+  'BAIE COMEAU':             [49.133, -68.200],
+  'BEAUCEVILLE':             [46.213, -70.776],
+  'BONNARD':                 [49.817, -74.567],
+  'CAP CHAT':                [49.100, -66.683],
+  'CAP D\'ESPOIR':           [48.417, -64.317],
+  'CAP MADELEINE':           [49.250, -65.317],
+  'CAP TOURMENTE':           [47.067, -70.767],
+  'CHIBOUGAMAU-CHAPAIS':     [49.771, -74.528],
+  'FRELIGHSBURG':            [45.050, -72.833],
+  'GASPE':                   [48.775, -64.479],
+  'HAVRE ST-PIERRE':         [50.281, -63.597],
+  'ILE AUX PERROQUETS':      [50.217, -64.183],
+  'ILE BICQUETTE':           [48.883, -68.700],
+  'ILE D\'ORLEANS':          [46.967, -70.950],
+  'ILE ROUGE':               [47.750, -69.567],
+  'ILES DE LA MADELEINE (AU8)': [47.424, -61.799],
+  'JONQUIERE':               [48.417, -71.133],
+  'KUUJJUARAPIK':            [55.283, -77.767],
+  'L\'ACADIE':               [45.294, -73.349],
+  'L\'ASSOMPTION':           [45.817, -73.433],
+  'LA GRANDE IV':            [53.750, -73.667],
+  'LA GRANDE RIVIERE':       [53.633, -77.700],
+  'LA TUQUE':                [47.433, -72.783],
+  'LAC EON':                 [51.867, -63.233],
+  'LEMIEUX':                 [46.233, -72.400],
+  'MANIWAKI':                [46.383, -75.983],
+  'MATAGAMI':                [49.750, -77.633],
+  'MCTAVISH':                [45.505, -73.578],
+  'MIRABEL':                 [45.679, -74.037],
+  'MISTOOK':                 [46.717, -71.617],
+  'MONT JOLI':               [48.600, -68.217],
+  'MONT ORFORD':             [45.317, -72.217],
+  'MONTREAL (DORVAL)':       [45.470, -73.749],
+  'NATASHQUAN':              [50.190, -61.789],
+  'NEW CARLISLE':            [48.000, -65.317],
+  'NICOLET':                 [46.217, -72.617],
+  'NORMANDIN':               [48.833, -72.533],
+  'OTTAWA':                  [45.322, -75.669],
+  'PARENT':                  [47.917, -74.617],
+  'POINT CLAVEAU':           [48.233, -69.817],
+  'POINTE DES MONTS':        [49.317, -67.383],
+  'QUEBEC':                  [46.800, -71.383],
+  'RIVIERE DU LOUP':         [47.800, -69.533],
+  'ROBERVAL':                [48.517, -72.267],
+  'ROQUEMAURE':              [48.783, -79.600],
+  'ROUYN':                   [48.267, -79.017],
+  'ROUYN (AU7)':             [48.250, -79.033],
+  'SCHEFFERVILLE':           [54.800, -66.817],
+  'SEPT-ILES':               [50.217, -66.267],
+  'SHERBROOKE':              [45.438, -71.687],
+  'ST-ANICET':               [45.117, -74.367],
+  'ST-HUBERT':               [45.517, -73.417],
+  'ST-JOVITE':               [46.117, -74.600],
+  'STE-ANNE-DE-BELLEVUE':    [45.400, -73.933],
+  'STE-CLOTHILDE':           [45.167, -73.683],
+  'TROIS RIVIERES':          [46.350, -72.517],
+  'VAL D\'OR':               [48.053, -77.783],
+  'VALCARTIER':              [46.917, -71.500]
+};
+
+let maCarte        = null;
+let carteMarkers   = {};
+let modeCarte      = 'moy'; // 'moy' ou 'last'
+let carteData      = {};    // { STATION: { moy, last, n } }
+let carteVariable  = '';
+let carteVarLabel  = '';
+
+// Palette de couleurs selon la valeur (froide → chaude)
+function couleurValeur(val, min, max) {
+  if (val === null || isNaN(val)) return '#aaa';
+  const ratio = max === min ? 0.5 : (val - min) / (max - min);
+  const couleurs = [
+    [98,  135, 139], // teal froid
+    [196, 152, 124], // beige
+    [245, 158,  25], // ocre chaud
+    [164,  90,  55]  // terre très chaud
+  ];
+  const n = couleurs.length - 1;
+  const i = Math.min(Math.floor(ratio * n), n - 1);
+  const t = (ratio * n) - i;
+  const c1 = couleurs[i];
+  const c2 = couleurs[i + 1];
+  const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
+  const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
+  const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function marqueurIcon(couleur, valeur, unite) {
+  const label = valeur !== null && !isNaN(valeur) ? valeur.toFixed(1) + unite : '—';
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36">'
+    + '<rect rx="8" ry="8" width="64" height="28" fill="' + couleur + '" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>'
+    + '<text x="32" y="19" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" font-weight="700" fill="#fff">'
+    + label + '</text>'
+    + '<polygon points="28,28 36,28 32,36" fill="' + couleur + '"/>'
+    + '</svg>';
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [64, 36],
+    iconAnchor: [32, 36],
+    popupAnchor: [0, -38]
+  });
+}
+
+function mettreAJourCarte() {
+  if (!maCarte) return;
+  const unites = { t: '°C', tf: '°C', hr: '%', pa: ' hPa', rs: ' kJ/m²/h', vv: ' km/h', dv: '°' };
+  const unite  = unites[carteVariable] || '';
+
+  // Calculer min/max pour la palette
+  const vals = Object.values(carteData).map(d => modeCarte === 'moy' ? d.moy : d.last).filter(v => v !== null && !isNaN(v));
+  const vMin = vals.length ? Math.min.apply(null, vals) : 0;
+  const vMax = vals.length ? Math.max.apply(null, vals) : 1;
+
+  // Mettre à jour ou créer les marqueurs
+  Object.entries(STATIONS_COORDS).forEach(function(entry) {
+    const nom    = entry[0];
+    const coords = entry[1];
+    const d      = carteData[nom];
+    const val    = d ? (modeCarte === 'moy' ? d.moy : d.last) : null;
+    const couleur = couleurValeur(val, vMin, vMax);
+    const icon    = marqueurIcon(couleur, val, unite);
+
+    const popupMoy  = d ? d.moy.toFixed(1) + unite : '—';
+    const popupLast = d ? d.last.toFixed(1) + unite : '—';
+    const popupN    = d ? d.n.toLocaleString('fr-CA') + ' enreg.' : 'Aucune donnée';
+    const popup = '<div style="font-family:Montserrat,sans-serif;min-width:160px;">'
+      + '<strong style="color:#62878b;font-size:0.85rem;">' + nom + '</strong><br>'
+      + '<div style="margin-top:6px;font-size:0.78rem;line-height:1.8;">'
+      + '<span style="color:#888;">Moyenne :</span> <strong>' + popupMoy + '</strong><br>'
+      + '<span style="color:#888;">Dernière valeur :</span> <strong>' + popupLast + '</strong><br>'
+      + '<span style="color:#888;">Enregistrements :</span> ' + popupN
+      + '</div></div>';
+
+    if (carteMarkers[nom]) {
+      carteMarkers[nom].setIcon(icon);
+      carteMarkers[nom].setPopupContent(popup);
+    } else {
+      const m = L.marker(coords, { icon: icon }).addTo(maCarte).bindPopup(popup);
+      carteMarkers[nom] = m;
+    }
+  });
+
+  // Légende
+  const legende = document.getElementById('carte-legende');
+  legende.innerHTML = '<span>Légende :</span>'
+    + '<span class="legende-item"><span class="legende-dot" style="background:rgb(98,135,139)"></span> Valeurs basses</span>'
+    + '<span class="legende-item"><span class="legende-dot" style="background:#f59e19"></span> Valeurs moyennes</span>'
+    + '<span class="legende-item"><span class="legende-dot" style="background:#a45a37"></span> Valeurs élevées</span>'
+    + '<span class="legende-item"><span class="legende-dot" style="background:#aaa"></span> Aucune donnée</span>';
+}
+
+async function chargerCarte(variable, dateDebut, dateFin) {
+  const varLabels = { t: 'Temp. sèche (°C)', tf: 'Temp. humide (°C)', hr: 'Humidité (%)', pa: 'Pression (hPa)', rs: 'Rayonnement (kJ/m²/h)', vv: 'Vent (km/h)', dv: 'Dir. vent (°)' };
+  carteVariable = variable;
+  carteVarLabel = varLabels[variable] || variable;
+
+  document.getElementById('carte-placeholder').style.display = 'none';
+  document.getElementById('carte-contenu').style.display     = 'flex';
+  document.getElementById('carte-titre').textContent         = carteVarLabel + ' — Toutes les stations';
+  document.getElementById('carte-sous-titre').textContent    = dateDebut + ' → ' + dateFin;
+  document.getElementById('carte-loading').classList.add('visible');
+
+  // Initialiser la carte Leaflet si pas encore fait
+  if (!maCarte) {
+    maCarte = L.map('ma-carte', { zoomControl: true }).setView([50.5, -72], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 13
+    }).addTo(maCarte);
+  }
+
+  // Appel API — toutes stations, même période
+  try {
+    const params = new URLSearchParams({ dateDebut: dateDebut, dateFin: dateFin, variable: variable, toutesStations: '1' });
+    const res    = await fetch('/api/meteo?' + params);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data   = await res.json();
+    const records = data.results || [];
+
+    // Clés de la variable
+    const varKeys = { t: ['t'], tf: ['td'], hr: ['hr'], pa: ['psta'], rs: ['rf1e'], vv: ['vv'], dv: ['vd'] };
+    const keys = varKeys[variable] || [variable];
+
+    // Calculer moyenne et dernière valeur par station
+    carteData = {};
+    records.forEach(function(r) {
+      const nom = r.station;
+      if (!nom) return;
+      let val = null;
+      for (const k of keys) {
+        const found = Object.keys(r).find(function(rk) { return rk.toLowerCase() === k.toLowerCase(); });
+        if (found) { val = parseFloat(r[found]); break; }
+      }
+      if (!carteData[nom]) carteData[nom] = { sum: 0, n: 0, last: null, moy: null };
+      if (!isNaN(val) && val !== null) {
+        carteData[nom].sum  += val;
+        carteData[nom].n    += 1;
+        carteData[nom].last  = val;
+      }
+    });
+    // Calculer les moyennes
+    Object.keys(carteData).forEach(function(nom) {
+      const d = carteData[nom];
+      d.moy = d.n > 0 ? d.sum / d.n : null;
+    });
+
+    mettreAJourCarte();
+
+  } catch(e) {
+    console.error('Erreur carte:', e.message);
+  } finally {
+    document.getElementById('carte-loading').classList.remove('visible');
+    // Forcer le recalcul de la taille de la carte
+    setTimeout(function() { if (maCarte) maCarte.invalidateSize(); }, 100);
+  }
+}
+
+function setModeCarte(mode, btn) {
+  modeCarte = mode;
+  document.querySelectorAll('.carte-toggle .btn-type').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  mettreAJourCarte();
 }
 
 // ══ LANCEMENT — toujours en dernier ══
