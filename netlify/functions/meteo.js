@@ -1,24 +1,22 @@
 /**
  * Fonction Netlify — Proxy API Hydro-Québec
  *
- * Mode 1 — Date max      : /api/meteo?dateMax=1
- * Mode 2 — Date min      : /api/meteo?dateMin=1
- * Mode 3 — Toutes stations : /api/meteo?toutesStations=1&dateDebut=X&dateFin=Y&variable=Z
- * Mode 4 — Une station   : /api/meteo?station=X&dateDebut=Y&dateFin=Z
+ * Mode 1 — Date max    : /api/meteo?dateMax=1
+ * Mode 2 — Date min    : /api/meteo?dateMin=1
+ * Mode 3 — Jour carte  : /api/meteo?dateJour=YYYY-MM-DD
+ * Mode 4 — Une station : /api/meteo?station=X&dateDebut=Y&dateFin=Z
  */
 
 const API_BASE = 'https://donnees.hydroquebec.com/api/explore/v2.1/catalog/datasets/historique-donnees-meteo/records';
 const LIMIT    = 100;
 
 async function fetchAll(where, orderBy) {
-  // Compter
   const countUrl = API_BASE + '?where=' + encodeURIComponent(where) + '&limit=0&timezone=America/Toronto';
   const countRes = await fetch(countUrl);
   if (!countRes.ok) throw new Error('API HQ ' + countRes.status);
   const total = (await countRes.json()).total_count || 0;
   if (total === 0) return [];
 
-  // Paginer
   let all = [];
   const nbPages = Math.ceil(total / LIMIT);
   for (let p = 0; p < nbPages; p++) {
@@ -49,10 +47,10 @@ exports.handler = async function (event) {
   // ── MODE 1 : date max ──
   if (params.dateMax === '1') {
     try {
-      const url  = API_BASE + '?limit=1&order_by=date_locale%20DESC&select=date_locale&timezone=America/Toronto';
-      const res  = await fetch(url);
+      const url = API_BASE + '?limit=1&order_by=date_locale%20DESC&select=date_locale&timezone=America/Toronto';
+      const res = await fetch(url);
       if (!res.ok) throw new Error('API HQ ' + res.status);
-      const raw  = ((await res.json()).results[0] || {}).date_locale || '';
+      const raw = ((await res.json()).results[0] || {}).date_locale || '';
       return { statusCode: 200, headers, body: JSON.stringify({ dateMax: raw.substring(0, 10) }) };
     } catch (err) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
@@ -62,33 +60,30 @@ exports.handler = async function (event) {
   // ── MODE 2 : date min ──
   if (params.dateMin === '1') {
     try {
-      const url  = API_BASE + '?limit=1&order_by=date_locale%20ASC&select=date_locale&timezone=America/Toronto';
-      const res  = await fetch(url);
+      const url = API_BASE + '?limit=1&order_by=date_locale%20ASC&select=date_locale&timezone=America/Toronto';
+      const res = await fetch(url);
       if (!res.ok) throw new Error('API HQ ' + res.status);
-      const raw  = ((await res.json()).results[0] || {}).date_locale || '';
+      const raw = ((await res.json()).results[0] || {}).date_locale || '';
       return { statusCode: 200, headers, body: JSON.stringify({ dateMin: raw.substring(0, 10) }) };
     } catch (err) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
     }
   }
 
-  // ── MODE 3 : toutes stations ──
-  if (params.toutesStations === '1') {
-    const { dateDebut, dateFin } = params;
-    if (!dateDebut || !dateFin) {
-      return { statusCode: 400, headers, body: JSON.stringify({ error: 'dateDebut et dateFin requis.' }) };
-    }
+  // ── MODE 3 : données d'une journée pour toutes les stations (carte) ──
+  if (params.dateJour) {
+    const date = params.dateJour;
     try {
-      const where    = 'date_locale >= "' + dateDebut + '" AND date_locale <= "' + dateFin + '"';
-      const orderBy  = 'station ASC, date_locale ASC, heure_locale ASC';
-      const results  = await fetchAll(where, orderBy);
+      const where   = 'date_locale = "' + date + '"';
+      const orderBy = 'station ASC, heure_locale ASC';
+      const results = await fetchAll(where, orderBy);
       return { statusCode: 200, headers, body: JSON.stringify({ total: results.length, results }) };
     } catch (err) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
     }
   }
 
-  // ── MODE 4 : une station ──
+  // ── MODE 4 : une station sur une période (graphique/tableau) ──
   const { station, dateDebut, dateFin } = params;
   if (!station || !dateDebut || !dateFin) {
     return { statusCode: 400, headers, body: JSON.stringify({ error: 'station, dateDebut, dateFin requis.' }) };

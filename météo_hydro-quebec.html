@@ -590,19 +590,18 @@ body.page-accueil .status-bar {
 .carte-wrap {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 280px);
-  min-height: 480px;
+  height: calc(100vh - 200px);
+  min-height: 520px;
   padding: 1.25rem 2rem;
-  max-width: 960px;
-  margin: 0 auto;
   gap: 0.75rem;
 }
 .carte-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
+  flex-shrink: 0;
 }
 .carte-titre {
   font-size: 0.95rem;
@@ -615,12 +614,18 @@ body.page-accueil .status-bar {
   font-weight: 500;
   margin-top: 2px;
 }
-.carte-toggle { display: flex; gap: 0.4rem; align-items: center; }
+.carte-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
 .carte-loading {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--terre);
   display: none;
+  align-self: center;
 }
 .carte-loading.visible { display: block; }
 #ma-carte {
@@ -630,21 +635,48 @@ body.page-accueil .status-bar {
   overflow: hidden;
   min-height: 400px;
 }
-.carte-legende {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #666;
+/* Popup Leaflet */
+.leaflet-popup-content {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.82rem;
+  min-width: 200px;
 }
-.legende-item { display: flex; align-items: center; gap: 0.3rem; }
-.legende-dot {
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-  border: 1.5px solid rgba(0,0,0,0.15);
+.popup-station-nom {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--creme);
+}
+.popup-date {
+  font-size: 0.68rem;
+  color: #aaa;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+.popup-vars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
+.popup-var {
+  display: flex;
+  flex-direction: column;
+}
+.popup-var-label {
+  font-size: 0.62rem;
+  color: #aaa;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.popup-var-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--noir);
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -906,24 +938,24 @@ body.page-accueil .status-bar {
 
 <!-- ══════════ PAGE CARTE ══════════ -->
 <div class="page" id="page-carte">
-  <div class="page-placeholder" id="carte-placeholder">
-    <div class="ph-icon">🗺️</div>
-    <p>Sélectionnez une variable et une période dans le panneau ci-dessus, puis cliquez sur <strong>Charger les données</strong> pour afficher la carte.</p>
-  </div>
-  <div class="carte-wrap" id="carte-contenu" style="display:none;">
+  <div class="carte-wrap">
     <div class="carte-header">
       <div>
-        <div class="carte-titre" id="carte-titre">—</div>
-        <div class="carte-sous-titre" id="carte-sous-titre">—</div>
+        <div class="carte-titre">Stations météorologiques — Québec</div>
+        <div class="carte-sous-titre" id="carte-sous-titre">59 stations · Cliquez sur un marqueur pour voir les données</div>
       </div>
-      <div class="carte-toggle">
-        <span class="carte-loading" id="carte-loading">⏳ Chargement toutes stations…</span>
-        <button class="btn-type active" id="btn-carte-moy"  onclick="setModeCarte('moy', this)">∑ Moyenne</button>
-        <button class="btn-type"        id="btn-carte-last" onclick="setModeCarte('last', this)">⏱ Dernière valeur</button>
+      <div class="carte-controls">
+        <div class="sel-group">
+          <label>Date</label>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="date" id="carte-date" style="min-width:150px;">
+            <button class="btn-charger" style="padding:7px 16px; font-size:0.75rem;" onclick="chargerCarte()">Appliquer</button>
+          </div>
+        </div>
+        <span class="carte-loading" id="carte-loading">⏳ Chargement…</span>
       </div>
     </div>
     <div id="ma-carte"></div>
-    <div class="carte-legende" id="carte-legende"></div>
   </div>
 </div>
 
@@ -967,6 +999,8 @@ function showPage(id) {
   });
   // Afficher les filtres seulement hors accueil
   document.body.className = 'page-' + id;
+  // Initialiser la carte si on arrive sur cet onglet
+  if (id === 'carte') onPageCarte();
 }
 
 // ══ UTILITAIRES ══
@@ -1169,8 +1203,6 @@ async function chargerDonnees() {
     // Afficher le graphique
     afficherGraphique(station, variable, realKey);
 
-    // Lancer le chargement de la carte (toutes stations)
-    chargerCarte(variable, dateDebut, dateFin);
 
     console.log('Données chargées :', ALL_DATA.length, 'enregistrements');
     console.log('Clé variable :', realKey);
@@ -1298,7 +1330,7 @@ const STATIONS_COORDS = {
   'BEAUCEVILLE':             [46.213, -70.776],
   'BONNARD':                 [49.817, -74.567],
   'CAP CHAT':                [49.100, -66.683],
-  'CAP D\'ESPOIR':           [48.417, -64.317],
+  "CAP D'ESPOIR":            [48.417, -64.317],
   'CAP MADELEINE':           [49.250, -65.317],
   'CAP TOURMENTE':           [47.067, -70.767],
   'CHIBOUGAMAU-CHAPAIS':     [49.771, -74.528],
@@ -1307,13 +1339,13 @@ const STATIONS_COORDS = {
   'HAVRE ST-PIERRE':         [50.281, -63.597],
   'ILE AUX PERROQUETS':      [50.217, -64.183],
   'ILE BICQUETTE':           [48.883, -68.700],
-  'ILE D\'ORLEANS':          [46.967, -70.950],
+  "ILE D'ORLEANS":           [46.967, -70.950],
   'ILE ROUGE':               [47.750, -69.567],
   'ILES DE LA MADELEINE (AU8)': [47.424, -61.799],
   'JONQUIERE':               [48.417, -71.133],
   'KUUJJUARAPIK':            [55.283, -77.767],
-  'L\'ACADIE':               [45.294, -73.349],
-  'L\'ASSOMPTION':           [45.817, -73.433],
+  "L'ACADIE":                [45.294, -73.349],
+  "L'ASSOMPTION":            [45.817, -73.433],
   'LA GRANDE IV':            [53.750, -73.667],
   'LA GRANDE RIVIERE':       [53.633, -77.700],
   'LA TUQUE':                [47.433, -72.783],
@@ -1350,166 +1382,119 @@ const STATIONS_COORDS = {
   'STE-ANNE-DE-BELLEVUE':    [45.400, -73.933],
   'STE-CLOTHILDE':           [45.167, -73.683],
   'TROIS RIVIERES':          [46.350, -72.517],
-  'VAL D\'OR':               [48.053, -77.783],
+  "VAL D'OR":                [48.053, -77.783],
   'VALCARTIER':              [46.917, -71.500]
 };
 
-let maCarte        = null;
-let carteMarkers   = {};
-let modeCarte      = 'moy'; // 'moy' ou 'last'
-let carteData      = {};    // { STATION: { moy, last, n } }
-let carteVariable  = '';
-let carteVarLabel  = '';
+let maCarte      = null;
+let carteMarkers = {}; // { NOM_STATION: marker }
+let donneesJour  = {}; // { NOM_STATION: { t, td, hr, psta, rf1e, vv, vd } }
+let carteInitialisee = false;
 
-// Palette de couleurs selon la valeur (froide → chaude)
-function couleurValeur(val, min, max) {
-  if (val === null || isNaN(val)) return '#aaa';
-  const ratio = max === min ? 0.5 : (val - min) / (max - min);
-  const couleurs = [
-    [98,  135, 139], // teal froid
-    [196, 152, 124], // beige
-    [245, 158,  25], // ocre chaud
-    [164,  90,  55]  // terre très chaud
-  ];
-  const n = couleurs.length - 1;
-  const i = Math.min(Math.floor(ratio * n), n - 1);
-  const t = (ratio * n) - i;
-  const c1 = couleurs[i];
-  const c2 = couleurs[i + 1];
-  const r = Math.round(c1[0] + t * (c2[0] - c1[0]));
-  const g = Math.round(c1[1] + t * (c2[1] - c1[1]));
-  const b = Math.round(c1[2] + t * (c2[2] - c1[2]));
-  return 'rgb(' + r + ',' + g + ',' + b + ')';
-}
+// Initialiser la carte Leaflet (une seule fois)
+function initCarte() {
+  if (carteInitialisee) return;
+  carteInitialisee = true;
+  maCarte = L.map('ma-carte', { zoomControl: true }).setView([50.5, -72], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 13
+  }).addTo(maCarte);
 
-function marqueurIcon(couleur, valeur, unite) {
-  const label = valeur !== null && !isNaN(valeur) ? valeur.toFixed(1) + unite : '—';
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="36">'
-    + '<rect rx="8" ry="8" width="64" height="28" fill="' + couleur + '" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>'
-    + '<text x="32" y="19" text-anchor="middle" font-family="Montserrat,sans-serif" font-size="11" font-weight="700" fill="#fff">'
-    + label + '</text>'
-    + '<polygon points="28,28 36,28 32,36" fill="' + couleur + '"/>'
-    + '</svg>';
-  return L.divIcon({
-    html: svg,
-    className: '',
-    iconSize: [64, 36],
-    iconAnchor: [32, 36],
-    popupAnchor: [0, -38]
-  });
-}
-
-function mettreAJourCarte() {
-  if (!maCarte) return;
-  const unites = { t: '°C', tf: '°C', hr: '%', pa: ' hPa', rs: ' kJ/m²/h', vv: ' km/h', dv: '°' };
-  const unite  = unites[carteVariable] || '';
-
-  // Calculer min/max pour la palette
-  const vals = Object.values(carteData).map(d => modeCarte === 'moy' ? d.moy : d.last).filter(v => v !== null && !isNaN(v));
-  const vMin = vals.length ? Math.min.apply(null, vals) : 0;
-  const vMax = vals.length ? Math.max.apply(null, vals) : 1;
-
-  // Mettre à jour ou créer les marqueurs
+  // Créer les 59 marqueurs immédiatement
   Object.entries(STATIONS_COORDS).forEach(function(entry) {
     const nom    = entry[0];
     const coords = entry[1];
-    const d      = carteData[nom];
-    const val    = d ? (modeCarte === 'moy' ? d.moy : d.last) : null;
-    const couleur = couleurValeur(val, vMin, vMax);
-    const icon    = marqueurIcon(couleur, val, unite);
-
-    const popupMoy  = d ? d.moy.toFixed(1) + unite : '—';
-    const popupLast = d ? d.last.toFixed(1) + unite : '—';
-    const popupN    = d ? d.n.toLocaleString('fr-CA') + ' enreg.' : 'Aucune donnée';
-    const popup = '<div style="font-family:Montserrat,sans-serif;min-width:160px;">'
-      + '<strong style="color:#62878b;font-size:0.85rem;">' + nom + '</strong><br>'
-      + '<div style="margin-top:6px;font-size:0.78rem;line-height:1.8;">'
-      + '<span style="color:#888;">Moyenne :</span> <strong>' + popupMoy + '</strong><br>'
-      + '<span style="color:#888;">Dernière valeur :</span> <strong>' + popupLast + '</strong><br>'
-      + '<span style="color:#888;">Enregistrements :</span> ' + popupN
-      + '</div></div>';
-
-    if (carteMarkers[nom]) {
-      carteMarkers[nom].setIcon(icon);
-      carteMarkers[nom].setPopupContent(popup);
-    } else {
-      const m = L.marker(coords, { icon: icon }).addTo(maCarte).bindPopup(popup);
-      carteMarkers[nom] = m;
-    }
+    const marker = L.circleMarker(coords, {
+      radius: 7,
+      fillColor: '#62878b',
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.85
+    }).addTo(maCarte);
+    marker.bindTooltip(nom, { permanent: false, direction: 'top', className: 'leaflet-tooltip-station' });
+    marker.bindPopup(buildPopup(nom, null), { maxWidth: 280 });
+    marker.on('click', function() {
+      marker.openPopup();
+    });
+    carteMarkers[nom] = marker;
   });
-
-  // Légende
-  const legende = document.getElementById('carte-legende');
-  legende.innerHTML = '<span>Légende :</span>'
-    + '<span class="legende-item"><span class="legende-dot" style="background:rgb(98,135,139)"></span> Valeurs basses</span>'
-    + '<span class="legende-item"><span class="legende-dot" style="background:#f59e19"></span> Valeurs moyennes</span>'
-    + '<span class="legende-item"><span class="legende-dot" style="background:#a45a37"></span> Valeurs élevées</span>'
-    + '<span class="legende-item"><span class="legende-dot" style="background:#aaa"></span> Aucune donnée</span>';
 }
 
-async function chargerCarte(variable, dateDebut, dateFin) {
-  const varLabels = { t: 'Temp. sèche (°C)', tf: 'Temp. humide (°C)', hr: 'Humidité (%)', pa: 'Pression (hPa)', rs: 'Rayonnement (kJ/m²/h)', vv: 'Vent (km/h)', dv: 'Dir. vent (°)' };
-  carteVariable = variable;
-  carteVarLabel = varLabels[variable] || variable;
+// Construire le contenu HTML du popup
+function buildPopup(nom, data) {
+  const date = document.getElementById('carte-date') ? document.getElementById('carte-date').value : '—';
+  if (!data) {
+    return '<div class="popup-station-nom">' + nom + '</div>'
+      + '<div class="popup-date">' + date + '</div>'
+      + '<div style="color:#aaa;font-size:0.8rem;">Aucune donnée chargée.<br>Cliquez sur Appliquer.</div>';
+  }
+  function fmt(v, u) { return (v !== null && !isNaN(v)) ? parseFloat(v).toFixed(1) + u : '—'; }
+  return '<div class="popup-station-nom">' + nom + '</div>'
+    + '<div class="popup-date">' + date + '</div>'
+    + '<div class="popup-vars">'
+    + '<div class="popup-var"><span class="popup-var-label">Temp. sèche</span><span class="popup-var-val">' + fmt(data.t, '°C') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Temp. humide</span><span class="popup-var-val">' + fmt(data.td, '°C') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Humidité</span><span class="popup-var-val">' + fmt(data.hr, '%') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Pression</span><span class="popup-var-val">' + fmt(data.psta, ' hPa') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Rayonnement</span><span class="popup-var-val">' + fmt(data.rf1e, ' kJ/m²/h') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Vent</span><span class="popup-var-val">' + fmt(data.vv, ' km/h') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Dir. vent</span><span class="popup-var-val">' + fmt(data.vd, '°') + '</span></div>'
+    + '</div>';
+}
 
-  document.getElementById('carte-placeholder').style.display = 'none';
-  document.getElementById('carte-contenu').style.display     = 'flex';
-  document.getElementById('carte-titre').textContent         = carteVarLabel + ' — Toutes les stations';
-  document.getElementById('carte-sous-titre').textContent    = dateDebut + ' → ' + dateFin;
-  document.getElementById('carte-loading').classList.add('visible');
-
-  // Initialiser Leaflet APRÈS que la div soit visible
-  await new Promise(function(resolve) {
-    setTimeout(function() {
-      if (!maCarte) {
-        maCarte = L.map('ma-carte', { zoomControl: true }).setView([50.5, -72], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap',
-          maxZoom: 13
-        }).addTo(maCarte);
-      } else {
-        maCarte.invalidateSize();
-      }
-      resolve();
-    }, 200);
+// Mettre à jour les popups de tous les marqueurs
+function mettreAJourPopups() {
+  Object.entries(carteMarkers).forEach(function(entry) {
+    const nom    = entry[0];
+    const marker = entry[1];
+    const data   = donneesJour[nom] || null;
+    marker.setPopupContent(buildPopup(nom, data));
+    // Changer la couleur si données disponibles
+    marker.setStyle({ fillColor: data ? '#f59e19' : '#62878b' });
   });
+}
 
-  // Appel API — toutes stations, même période
+// Charger les données pour une date précise (toutes stations)
+async function chargerCarte() {
+  const date = document.getElementById('carte-date').value;
+  if (!date) return;
+
+  document.getElementById('carte-loading').classList.add('visible');
+  document.getElementById('carte-sous-titre').textContent = '59 stations · ' + date;
+
   try {
-    const params = new URLSearchParams({ dateDebut: dateDebut, dateFin: dateFin, variable: variable, toutesStations: '1' });
-    const res    = await fetch('/api/meteo?' + params);
+    const res  = await fetch('/api/meteo?dateJour=' + date);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data   = await res.json();
-    const records = data.results || [];
+    const data = await res.json();
 
-    // Clés de la variable
-    const varKeys = { t: ['t'], tf: ['td'], hr: ['hr'], pa: ['psta'], rs: ['rf1e'], vv: ['vv'], dv: ['vd'] };
-    const keys = varKeys[variable] || [variable];
-
-    // Calculer moyenne et dernière valeur par station
-    carteData = {};
-    records.forEach(function(r) {
+    // Regrouper par station (moyenne de la journée)
+    donneesJour = {};
+    (data.results || []).forEach(function(r) {
       const nom = r.station;
       if (!nom) return;
-      let val = null;
-      for (const k of keys) {
+      if (!donneesJour[nom]) {
+        donneesJour[nom] = { t: [], td: [], hr: [], psta: [], rf1e: [], vv: [], vd: [] };
+      }
+      ['t','td','hr','psta','rf1e','vv','vd'].forEach(function(k) {
         const found = Object.keys(r).find(function(rk) { return rk.toLowerCase() === k.toLowerCase(); });
-        if (found) { val = parseFloat(r[found]); break; }
-      }
-      if (!carteData[nom]) carteData[nom] = { sum: 0, n: 0, last: null, moy: null };
-      if (!isNaN(val) && val !== null) {
-        carteData[nom].sum  += val;
-        carteData[nom].n    += 1;
-        carteData[nom].last  = val;
-      }
-    });
-    // Calculer les moyennes
-    Object.keys(carteData).forEach(function(nom) {
-      const d = carteData[nom];
-      d.moy = d.n > 0 ? d.sum / d.n : null;
+        if (found) {
+          const v = parseFloat(r[found]);
+          if (!isNaN(v)) donneesJour[nom][k].push(v);
+        }
+      });
     });
 
-    mettreAJourCarte();
+    // Calculer les moyennes
+    Object.keys(donneesJour).forEach(function(nom) {
+      const d = donneesJour[nom];
+      ['t','td','hr','psta','rf1e','vv','vd'].forEach(function(k) {
+        d[k] = d[k].length ? d[k].reduce(function(a,b){return a+b;},0) / d[k].length : null;
+      });
+    });
+
+    mettreAJourPopups();
 
   } catch(e) {
     console.error('Erreur carte:', e.message);
@@ -1518,11 +1503,19 @@ async function chargerCarte(variable, dateDebut, dateFin) {
   }
 }
 
-function setModeCarte(mode, btn) {
-  modeCarte = mode;
-  document.querySelectorAll('.carte-toggle .btn-type').forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
-  mettreAJourCarte();
+// Appelée quand on clique sur l'onglet Carte
+function onPageCarte() {
+  setTimeout(function() {
+    initCarte();
+    maCarte.invalidateSize();
+    // Charger les données si DATE_MAX disponible et carte pas encore chargée
+    if (DATE_MAX && Object.keys(donneesJour).length === 0) {
+      document.getElementById('carte-date').value = DATE_MAX;
+      document.getElementById('carte-date').setAttribute('max', DATE_MAX);
+      if (DATE_MIN) document.getElementById('carte-date').setAttribute('min', DATE_MIN);
+      chargerCarte();
+    }
+  }, 150);
 }
 
 // ══ LANCEMENT — toujours en dernier ══
