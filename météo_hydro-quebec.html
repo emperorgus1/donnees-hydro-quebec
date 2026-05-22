@@ -939,54 +939,31 @@ async function chargerDonnees() {
 
     ALL_DATA = data.results;
 
-    // Clés exactes possibles selon la version de l'API
     const varKeys = {
-      t:  ['t_c', 't', 'temperature_c', 'temp_c'],
-      tf: ['tf_c', 'tf', 'temperature_humide_c', 'temp_humide'],
-      hr: ['hr', 'humidite_relative', 'humidity'],
-      pa: ['pa_hpa', 'pa', 'pression_hpa', 'pression'],
-      rs: ['rs_kjm2h', 'rs', 'rayonnement', 'radiation'],
-      vv: ['vv_kmh', 'vv', 'vitesse_vent', 'wind_speed'],
-      dv: ['dv', 'direction_vent', 'wind_dir']
+      t:  ['t_c', 't'],
+      tf: ['tf_c', 'tf'],
+      hr: ['hr'],
+      pa: ['pa_hpa', 'pa'],
+      rs: ['rs_kjm2h', 'rs'],
+      vv: ['vv_kmh', 'vv'],
+      dv: ['dv']
     };
-
-    // Mots-clés partiels pour la détection par défaut
-    const varKeywords = {
-      t:  ['température sèche', 'temp_s', ' t_'],
-      tf: ['température humide', 'humide', 'tf_', 'wet'],
-      hr: ['humidité', 'humidity', 'hr'],
-      pa: ['pression', 'pressure', 'pa_', 'hpa'],
-      rs: ['rayonnement', 'radiation', 'solaire', 'rs_'],
-      vv: ['vitesse', 'speed', 'vv_', 'wind_s'],
-      dv: ['direction', 'dir', 'dv']
-    };
-
-    const allDataKeys = Object.keys(ALL_DATA[0]);
-    let realKey = null;
-
-    // Passe 1 : correspondance exacte
     const candidates = varKeys[variable] || [variable];
+    let realKey = null;
     for (const c of candidates) {
-      const found = allDataKeys.find(function(k) { return k.toLowerCase() === c.toLowerCase(); });
+      const found = Object.keys(ALL_DATA[0]).find(function(k) { return k.toLowerCase() === c.toLowerCase(); });
       if (found) { realKey = found; break; }
     }
-
-    // Passe 2 : correspondance partielle par mot-clé
     if (!realKey) {
-      const keywords = varKeywords[variable] || [variable];
-      for (const kw of keywords) {
-        const found = allDataKeys.find(function(k) { return k.toLowerCase().includes(kw.toLowerCase()); });
-        if (found) { realKey = found; break; }
-      }
+      realKey = Object.keys(ALL_DATA[0]).find(function(k) { return k.toLowerCase().startsWith(variable); });
     }
 
-    // Passe 3 : commence par le code variable
-    if (!realKey) {
-      realKey = allDataKeys.find(function(k) { return k.toLowerCase().startsWith(variable + '_') || k.toLowerCase() === variable; });
-    }
-
-    // Log pour débogage
-    console.log('Variable:', variable, '| Clé détectée:', realKey, '| Clés disponibles:', allDataKeys);
+    // LOG — clés disponibles dans l'API (à retirer après diagnostic)
+    console.log('=== DIAGNOSTIC API ===');
+    console.log('Variable demandée :', variable);
+    console.log('Clé détectée      :', realKey);
+    console.log('Toutes les clés   :', Object.keys(ALL_DATA[0]));
+    console.log('Premier enreg.    :', ALL_DATA[0]);
 
     const valeurs = ALL_DATA
       .map(function(r) { return realKey ? parseFloat(r[realKey]) : null; })
