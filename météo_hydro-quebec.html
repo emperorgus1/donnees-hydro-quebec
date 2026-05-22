@@ -939,14 +939,15 @@ async function chargerDonnees() {
 
     ALL_DATA = data.results;
 
+    // Clés réelles retournées par l'API Hydro-Québec (confirmées par diagnostic)
     const varKeys = {
-      t:  ['t_c', 't'],
-      tf: ['tf_c', 'tf'],
+      t:  ['t', 't_c'],
+      tf: ['td', 'tf_c', 'tf'],
       hr: ['hr'],
-      pa: ['pa_hpa', 'pa'],
-      rs: ['rs_kjm2h', 'rs'],
-      vv: ['vv_kmh', 'vv'],
-      dv: ['dv']
+      pa: ['psta', 'pa_hpa', 'pa'],
+      rs: ['rf1e', 'rs_kjm2h', 'rs'],
+      vv: ['vv'],
+      dv: ['vd', 'dv']
     };
     const candidates = varKeys[variable] || [variable];
     let realKey = null;
@@ -954,16 +955,6 @@ async function chargerDonnees() {
       const found = Object.keys(ALL_DATA[0]).find(function(k) { return k.toLowerCase() === c.toLowerCase(); });
       if (found) { realKey = found; break; }
     }
-    if (!realKey) {
-      realKey = Object.keys(ALL_DATA[0]).find(function(k) { return k.toLowerCase().startsWith(variable); });
-    }
-
-    // LOG — clés disponibles dans l'API (à retirer après diagnostic)
-    console.log('=== DIAGNOSTIC API ===');
-    console.log('Variable demandée :', variable);
-    console.log('Clé détectée      :', realKey);
-    console.log('Toutes les clés   :', Object.keys(ALL_DATA[0]));
-    console.log('Premier enreg.    :', ALL_DATA[0]);
 
     const valeurs = ALL_DATA
       .map(function(r) { return realKey ? parseFloat(r[realKey]) : null; })
