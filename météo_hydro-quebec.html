@@ -517,9 +517,17 @@ footer .footer-credits {
 }
 .presentation-inner p:last-child { margin-bottom: 0; }
 .presentation-inner strong { color: var(--terre); font-weight: 600; }
+
+/* Masquer filtres, loader et barres sur la page accueil */
+body.page-accueil .selection-panel,
+body.page-accueil .loader-bar,
+body.page-accueil .error-bar,
+body.page-accueil .status-bar {
+  display: none !important;
+}
 </style>
 </head>
-<body>
+<body class="page-accueil">
 
 <!-- ══ BANDEAU OTERAUD ══ -->
 <div class="oteraud-bar">
@@ -803,6 +811,8 @@ function showPage(id) {
       t.classList.add('active');
     }
   });
+  // Afficher les filtres seulement hors accueil
+  document.body.className = 'page-' + id;
 }
 
 // ══ UTILITAIRES ══
