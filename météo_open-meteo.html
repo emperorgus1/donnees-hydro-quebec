@@ -628,6 +628,7 @@ async function chargerDonnees() {
 
     afficherGraphique(lastLieu, variable);
     afficherTableau(variable);
+    mettreAJourCarte(); // synchroniser la carte
 
     console.log('✅ Open-Meteo :', ALL_DATA.length, 'jours chargés');
 
@@ -754,90 +755,70 @@ function initCarte() {
       attribution: '© OpenStreetMap', maxZoom: 13
     }).addTo(maCarte);
 
-    // Clic sur la carte = charger les données pour ce point
-    maCarte.on('click', async function(e) {
+    // Clic sur la carte = mettre à jour les filtres et charger via chargerDonnees
+    maCarte.on('click', function(e) {
       const lat = e.latlng.lat.toFixed(4);
       const lon = e.latlng.lng.toFixed(4);
 
-      // Mettre à jour les champs de coordonnées
+      // Mettre à jour les champs du panneau de filtres
       document.getElementById('sel-lat').value = lat;
       document.getElementById('sel-lon').value = lon;
       document.getElementById('sel-lieu').value = '';
-      lastLat = parseFloat(lat); lastLon = parseFloat(lon);
-      lastLieu = lat + '°N, ' + Math.abs(lon).toFixed(4) + '°O';
+      lastCliqueLatLng = e.latlng; // mémoriser pour le popup
 
-      document.getElementById('carte-sous-titre').textContent = '⏳ Chargement pour ' + lastLieu + '…';
-      document.getElementById('carte-loading').classList.add('visible');
-
-      // Appel Open-Meteo pour 1 an
-      const fin   = new Date(); fin.setDate(fin.getDate() - 1);
-      const debut = new Date(fin); debut.setFullYear(fin.getFullYear() - 1);
-      const startDate = fmtDate(debut);
-      const endDate   = fmtDate(fin);
-
-      try {
-        const url = API_BASE
-          + '?latitude='   + lat
-          + '&longitude='  + lon
-          + '&start_date=' + startDate
-          + '&end_date='   + endDate
-          + '&daily='      + VARIABLES_DAILY
-          + '&timezone=America%2FToronto';
-
-        const res  = await fetch(url);
-        const data = await res.json();
-        if (data.error) throw new Error(data.reason);
-
-        const dates   = data.daily.time || [];
-        const varKeys = Object.keys(data.daily).filter(k => k !== 'time');
-        ALL_DATA = dates.map((date, i) => {
-          const row = { date };
-          varKeys.forEach(k => { row[k] = data.daily[k][i]; });
-          return row;
-        });
-
-        // Dernier jour disponible
-        const dernierJour = ALL_DATA[ALL_DATA.length - 1];
-
-        // Popup avec toutes les variables
-        function fv(k) {
-          const v = dernierJour[k];
-          return (v !== null && !isNaN(v)) ? parseFloat(v).toFixed(1) + (VAR_UNITES[k] || '') : '—';
-        }
-
-        const popupHtml = '<div class="popup-station-nom">' + lastLieu + '</div>'
-          + '<div class="popup-date">Dernière journée : ' + dernierJour.date + '</div>'
-          + '<div class="popup-vars">'
-          + '<div class="popup-var"><span class="popup-var-label">Temp. moy.</span><span class="popup-var-val">' + fv('temperature_2m_mean') + '</span></div>'
-          + '<div class="popup-var"><span class="popup-var-label">Temp. max</span><span class="popup-var-val">' + fv('temperature_2m_max') + '</span></div>'
-          + '<div class="popup-var"><span class="popup-var-label">Temp. min</span><span class="popup-var-val">' + fv('temperature_2m_min') + '</span></div>'
-          + '<div class="popup-var"><span class="popup-var-label">Précip.</span><span class="popup-var-val">' + fv('precipitation_sum') + '</span></div>'
-          + '<div class="popup-var"><span class="popup-var-label">Neige</span><span class="popup-var-val">' + fv('snowfall_sum') + '</span></div>'
-          + '<div class="popup-var"><span class="popup-var-label">Vent max</span><span class="popup-var-val">' + fv('wind_speed_10m_max') + '</span></div>'
-          + '<div class="popup-var"><span class="popup-var-label">Humidité</span><span class="popup-var-val">' + fv('relative_humidity_2m_mean') + '</span></div>'
-          + '<div class="popup-var"><span class="popup-var-label">Rayonnement</span><span class="popup-var-val">' + fv('shortwave_radiation_sum') + '</span></div>'
-          + '</div>'
-          + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--creme);">'
-          + '<button onclick="voirGraphiqueDepuisCarte()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-family:Montserrat,sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;width:100%;">Voir le graphique →</button>'
-          + '</div>';
-
-        L.popup({ maxWidth: 280 })
-          .setLatLng(e.latlng)
-          .setContent(popupHtml)
-          .openOn(maCarte);
-
-        document.getElementById('carte-sous-titre').textContent = 'Dernier clic : ' + lastLieu + ' — ' + ALL_DATA.length + ' jours chargés';
-
-      } catch(err) {
-        document.getElementById('carte-sous-titre').textContent = 'Erreur : ' + err.message;
-        console.error(err);
-      } finally {
-        document.getElementById('carte-loading').classList.remove('visible');
-      }
+      // Appeler chargerDonnees() qui synchronise graphique + carte
+      chargerDonnees();
     });
+
+    // Dummy pour éviter l'erreur de syntaxe — supprimé via remplacement complet
+    function _dummy_fv(k) {
+      return '';
+
+    } // fin _dummy_fv
 
     maCarte.invalidateSize();
   }, 200);
+}
+
+// Variable pour mémoriser le dernier point cliqué sur la carte
+let lastCliqueLatLng = null;
+
+// Met à jour le popup sur la carte après un chargement de données
+function mettreAJourCarte() {
+  if (!maCarte || !carteInit || !ALL_DATA.length) return;
+
+  // Position : dernier clic carte ou coordonnées actuelles
+  const latlng = lastCliqueLatLng || L.latLng(lastLat, lastLon);
+  const dernierJour = ALL_DATA[ALL_DATA.length - 1];
+
+  function fv(k) {
+    const v = dernierJour[k];
+    return (v !== null && v !== undefined && !isNaN(v))
+      ? parseFloat(v).toFixed(1) + (VAR_UNITES[k] || '') : '—';
+  }
+
+  const popupHtml = '<div class="popup-station-nom">' + lastLieu + '</div>'
+    + '<div class="popup-date">Dernière journée : ' + dernierJour.date + '</div>'
+    + '<div class="popup-vars">'
+    + '<div class="popup-var"><span class="popup-var-label">Temp. moy.</span><span class="popup-var-val">' + fv('temperature_2m_mean') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Temp. max</span><span class="popup-var-val">' + fv('temperature_2m_max') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Temp. min</span><span class="popup-var-val">' + fv('temperature_2m_min') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Précip.</span><span class="popup-var-val">' + fv('precipitation_sum') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Neige</span><span class="popup-var-val">' + fv('snowfall_sum') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Vent max</span><span class="popup-var-val">' + fv('wind_speed_10m_max') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Humidité</span><span class="popup-var-val">' + fv('relative_humidity_2m_mean') + '</span></div>'
+    + '<div class="popup-var"><span class="popup-var-label">Rayonnement</span><span class="popup-var-val">' + fv('shortwave_radiation_sum') + '</span></div>'
+    + '</div>'
+    + '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--creme);">'
+    + '<button onclick="voirGraphiqueDepuisCarte()" style="background:var(--teal);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-family:Montserrat,sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;width:100%;">Voir le graphique →</button>'
+    + '</div>';
+
+  L.popup({ maxWidth: 280 })
+    .setLatLng(latlng)
+    .setContent(popupHtml)
+    .openOn(maCarte);
+
+  document.getElementById('carte-sous-titre').textContent = lastLieu + ' — ' + ALL_DATA.length + ' jours chargés';
 }
 
 function voirGraphiqueDepuisCarte() {
