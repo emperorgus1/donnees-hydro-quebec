@@ -4,7 +4,10 @@
  * Mode 1 — Date max : /api/meteo?dateMax=1
  *   Retourne { dateMax: "YYYY-MM-DD" }
  *
- * Mode 2 — Données  : /api/meteo?station=X&dateDebut=YYYY-MM-DD&dateFin=YYYY-MM-DD
+ * Mode 2 — Date min : /api/meteo?dateMin=1
+ *   Retourne { dateMin: "YYYY-MM-DD" }
+ *
+ * Mode 3 — Données  : /api/meteo?station=X&dateDebut=YYYY-MM-DD&dateFin=YYYY-MM-DD
  *   Retourne { total: N, results: [...] }
  */
 
@@ -26,7 +29,7 @@ exports.handler = async function (event) {
 
   const params = event.queryStringParameters || {};
 
-  // ── MODE 1 : récupérer la date max disponible dans le jeu de données ──
+  // ── MODE 1 : date max ──
   if (params.dateMax === '1') {
     try {
       const url  = API_BASE + '?limit=1&order_by=date_locale%20DESC&select=date_locale&timezone=America/Toronto';
@@ -34,22 +37,35 @@ exports.handler = async function (event) {
       if (!res.ok) throw new Error('API HQ ' + res.status);
       const data = await res.json();
       const raw  = (data.results && data.results[0] && data.results[0].date_locale) || '';
-      const dateMax = raw.substring(0, 10); // YYYY-MM-DD
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ dateMax: dateMax })
+        body: JSON.stringify({ dateMax: raw.substring(0, 10) })
       };
     } catch (err) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: err.message })
-      };
+      return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
     }
   }
 
-  // ── MODE 2 : charger les données pour une station et une période ──
+  // ── MODE 2 : date min ──
+  if (params.dateMin === '1') {
+    try {
+      const url  = API_BASE + '?limit=1&order_by=date_locale%20ASC&select=date_locale&timezone=America/Toronto';
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error('API HQ ' + res.status);
+      const data = await res.json();
+      const raw  = (data.results && data.results[0] && data.results[0].date_locale) || '';
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ dateMin: raw.substring(0, 10) })
+      };
+    } catch (err) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+    }
+  }
+
+  // ── MODE 3 : charger les données ──
   const station   = params.station;
   const dateDebut = params.dateDebut;
   const dateFin   = params.dateFin;
@@ -66,7 +82,6 @@ exports.handler = async function (event) {
   const orderBy = 'date_locale ASC, heure_locale ASC';
 
   try {
-    // Compter le total
     const countUrl = API_BASE + '?where=' + encodeURIComponent(where) + '&limit=0&timezone=America/Toronto';
     const countRes = await fetch(countUrl);
     if (!countRes.ok) throw new Error('API HQ ' + countRes.status);
@@ -81,7 +96,6 @@ exports.handler = async function (event) {
       };
     }
 
-    // Paginer et récupérer tous les enregistrements
     let allResults = [];
     let offset     = 0;
     const nbPages  = Math.ceil(total / LIMIT);
@@ -93,7 +107,6 @@ exports.handler = async function (event) {
         + '&limit='    + LIMIT
         + '&offset='   + offset
         + '&timezone=America/Toronto';
-
       const res  = await fetch(url);
       if (!res.ok) throw new Error('API HQ page ' + (page + 1) + ' : ' + res.status);
       const data = await res.json();

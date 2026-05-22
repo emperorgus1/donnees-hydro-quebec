@@ -603,7 +603,7 @@ body.page-accueil .status-bar {
     <div class="header-logo-divider"></div>
     <div class="header-left">
       <h1>Données météorologiques historiques</h1>
-      <p>59 stations · Québec · 1995 à aujourd'hui · Hydro-Québec</p>
+      <p>59 stations · Québec · 2026 · Hydro-Québec</p>
     </div>
   </div>
   <span class="header-badge" id="header-badge">7 variables · Horaire</span>
@@ -621,7 +621,7 @@ body.page-accueil .status-bar {
 <div class="presentation-banner">
   <div class="presentation-inner">
     <h2>Explorer les données météorologiques historiques du Québec recueillies par Hydro-Québec</h2>
-    <p>Cette application donne accès aux données météorologiques horaires issues de <strong>59 stations d'Environnement Canada</strong> situées au Québec, diffusées en données ouvertes par Hydro-Québec. Les données couvrent la période de <strong>1995 à aujourd'hui</strong>.</p>
+    <p>Cette application donne accès aux données météorologiques horaires issues de <strong>59 stations d'Environnement Canada</strong> situées au Québec, diffusées en données ouvertes par Hydro-Québec. Les données disponibles couvrent l'année <strong>2026</strong>.</p>
     <p>Pour commencer, choisissez un des deux types de représentation disponibles : <strong>graphique ou carte</strong>. Vous aurez ainsi accès à une série de filtres qui vous permettra de construire votre requête selon votre besoin. Cliquez ensuite sur <em>Charger les données</em> pour que votre sélection s’affiche. Naviguez ensuite entre les onglets pour visualiser les résultats sous différentes formes.</p>
   </div>
 </div>
@@ -873,6 +873,7 @@ body.page-accueil .status-bar {
 const API_URL = '/api/meteo';
 let ALL_DATA  = [];
 let DATE_MAX  = null;
+let DATE_MIN  = null;
 
 // ══ NAVIGATION ══
 function showPage(id) {
@@ -961,16 +962,34 @@ function setPeriod(days, btn) {
 async function chargerDateMax() {
   const badge = document.getElementById('badge-date-max');
   try {
-    const res  = await fetch('/api/meteo?dateMax=1');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.dateMax) {
-      DATE_MAX = data.dateMax;
-      badge.textContent = 'Données jusqu’au ' + DATE_MAX;
+    // Récupérer date max ET date min en parallèle
+    const [resMax, resMin] = await Promise.all([
+      fetch('/api/meteo?dateMax=1'),
+      fetch('/api/meteo?dateMin=1')
+    ]);
+    if (!resMax.ok) throw new Error('HTTP ' + resMax.status);
+    const dataMax = await resMax.json();
+    const dataMin = resMin.ok ? await resMin.json() : {};
+
+    if (dataMax.dateMax) {
+      DATE_MAX = dataMax.dateMax;
+      // Appliquer max sur les deux champs de date
       document.getElementById('date-fin').setAttribute('max', DATE_MAX);
+      document.getElementById('date-debut').setAttribute('max', DATE_MAX);
     } else {
       throw new Error('dateMax absent');
     }
+
+    if (dataMin.dateMin) {
+      DATE_MIN = dataMin.dateMin;
+      // Appliquer min sur les deux champs de date
+      document.getElementById('date-debut').setAttribute('min', DATE_MIN);
+      document.getElementById('date-fin').setAttribute('min', DATE_MIN);
+      badge.textContent = 'Données du ' + DATE_MIN + ' au ' + DATE_MAX;
+    } else {
+      badge.textContent = 'Données jusqu’au ' + DATE_MAX;
+    }
+
   } catch (e) {
     badge.textContent = 'Date inconnue';
     console.warn('chargerDateMax :', e.message);
@@ -1009,7 +1028,8 @@ async function chargerDonnees() {
     const data = await res.json();
 
     if (!data.results || data.results.length === 0) {
-      throw new Error('Aucune donnée trouvée pour ' + station + ' entre ' + dateDebut + ' et ' + dateFin + '.');
+      const plage = DATE_MIN && DATE_MAX ? ' Les données disponibles vont du ' + DATE_MIN + ' au ' + DATE_MAX + '.' : '';
+      throw new Error('Aucune donnée trouvée pour ' + station + ' entre ' + dateDebut + ' et ' + dateFin + '.' + plage);
     }
 
     ALL_DATA = data.results;
