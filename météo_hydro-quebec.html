@@ -1458,14 +1458,21 @@ async function chargerCarte(variable, dateDebut, dateFin) {
   document.getElementById('carte-sous-titre').textContent    = dateDebut + ' → ' + dateFin;
   document.getElementById('carte-loading').classList.add('visible');
 
-  // Initialiser la carte Leaflet si pas encore fait
-  if (!maCarte) {
-    maCarte = L.map('ma-carte', { zoomControl: true }).setView([50.5, -72], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 13
-    }).addTo(maCarte);
-  }
+  // Initialiser Leaflet APRÈS que la div soit visible
+  await new Promise(function(resolve) {
+    setTimeout(function() {
+      if (!maCarte) {
+        maCarte = L.map('ma-carte', { zoomControl: true }).setView([50.5, -72], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap',
+          maxZoom: 13
+        }).addTo(maCarte);
+      } else {
+        maCarte.invalidateSize();
+      }
+      resolve();
+    }, 200);
+  });
 
   // Appel API — toutes stations, même période
   try {
@@ -1508,8 +1515,6 @@ async function chargerCarte(variable, dateDebut, dateFin) {
     console.error('Erreur carte:', e.message);
   } finally {
     document.getElementById('carte-loading').classList.remove('visible');
-    // Forcer le recalcul de la taille de la carte
-    setTimeout(function() { if (maCarte) maCarte.invalidateSize(); }, 100);
   }
 }
 
