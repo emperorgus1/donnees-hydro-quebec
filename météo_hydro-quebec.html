@@ -525,71 +525,7 @@ body.page-accueil .error-bar,
 body.page-accueil .status-bar {
   display: none !important;
 }
-
-/* ══ PAGE GRAPHIQUE ══ */
-.graphique-wrap {
-  padding: 1.5rem 2rem;
-  max-width: 960px;
-  margin: 0 auto;
-}
-.graphique-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-.graphique-titre {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--teal);
-}
-.graphique-sous-titre {
-  font-size: 0.75rem;
-  color: #888;
-  font-weight: 500;
-  margin-top: 2px;
-}
-.type-toggle {
-  display: flex;
-  gap: 0.4rem;
-}
-.btn-type {
-  padding: 5px 14px;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  font-family: var(--font);
-  font-weight: 700;
-  cursor: pointer;
-  border: 1.5px solid var(--creme);
-  background: var(--creme-light);
-  color: var(--noir);
-  letter-spacing: 0.04em;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-.btn-type.active,
-.btn-type:hover {
-  background: var(--teal-light);
-  border-color: var(--teal);
-  color: var(--teal);
-}
-.graphique-canvas-wrap {
-  background: #fff;
-  border: 1.5px solid var(--creme);
-  border-radius: 12px;
-  padding: 1.25rem;
-  position: relative;
-  min-height: 380px;
-}
-.graphique-info {
-  margin-top: 0.75rem;
-  font-size: 0.72rem;
-  color: #aaa;
-  text-align: right;
-}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body class="page-accueil">
 
@@ -824,25 +760,9 @@ body.page-accueil .status-bar {
 
 <!-- ══════════ PAGE GRAPHIQUE ══════════ -->
 <div class="page" id="page-graphique">
-  <div class="page-placeholder" id="graphique-placeholder">
+  <div class="page-placeholder">
     <div class="ph-icon">📈</div>
     <p>Sélectionnez une station et une période dans le panneau ci-dessus, puis cliquez sur <strong>Charger les données</strong> pour afficher le graphique.</p>
-  </div>
-  <div class="graphique-wrap" id="graphique-contenu" style="display:none;">
-    <div class="graphique-header">
-      <div>
-        <div class="graphique-titre" id="graphique-titre">—</div>
-        <div class="graphique-sous-titre" id="graphique-sous-titre">—</div>
-      </div>
-      <div class="type-toggle">
-        <button class="btn-type active" id="btn-ligne" onclick="setTypeGraphique('line', this)">📈 Courbe</button>
-        <button class="btn-type"        id="btn-barre" onclick="setTypeGraphique('bar', this)">📊 Barres</button>
-      </div>
-    </div>
-    <div class="graphique-canvas-wrap">
-      <canvas id="monGraphique"></canvas>
-    </div>
-    <div class="graphique-info" id="graphique-info"></div>
   </div>
 </div>
 
@@ -1019,24 +939,54 @@ async function chargerDonnees() {
 
     ALL_DATA = data.results;
 
+    // Clés exactes possibles selon la version de l'API
     const varKeys = {
-      t:  ['t_c', 't'],
-      tf: ['tf_c', 'tf'],
-      hr: ['hr'],
-      pa: ['pa_hpa', 'pa'],
-      rs: ['rs_kjm2h', 'rs'],
-      vv: ['vv_kmh', 'vv'],
-      dv: ['dv']
+      t:  ['t_c', 't', 'temperature_c', 'temp_c'],
+      tf: ['tf_c', 'tf', 'temperature_humide_c', 'temp_humide'],
+      hr: ['hr', 'humidite_relative', 'humidity'],
+      pa: ['pa_hpa', 'pa', 'pression_hpa', 'pression'],
+      rs: ['rs_kjm2h', 'rs', 'rayonnement', 'radiation'],
+      vv: ['vv_kmh', 'vv', 'vitesse_vent', 'wind_speed'],
+      dv: ['dv', 'direction_vent', 'wind_dir']
     };
-    const candidates = varKeys[variable] || [variable];
+
+    // Mots-clés partiels pour la détection par défaut
+    const varKeywords = {
+      t:  ['température sèche', 'temp_s', ' t_'],
+      tf: ['température humide', 'humide', 'tf_', 'wet'],
+      hr: ['humidité', 'humidity', 'hr'],
+      pa: ['pression', 'pressure', 'pa_', 'hpa'],
+      rs: ['rayonnement', 'radiation', 'solaire', 'rs_'],
+      vv: ['vitesse', 'speed', 'vv_', 'wind_s'],
+      dv: ['direction', 'dir', 'dv']
+    };
+
+    const allDataKeys = Object.keys(ALL_DATA[0]);
     let realKey = null;
+
+    // Passe 1 : correspondance exacte
+    const candidates = varKeys[variable] || [variable];
     for (const c of candidates) {
-      const found = Object.keys(ALL_DATA[0]).find(function(k) { return k.toLowerCase() === c.toLowerCase(); });
+      const found = allDataKeys.find(function(k) { return k.toLowerCase() === c.toLowerCase(); });
       if (found) { realKey = found; break; }
     }
+
+    // Passe 2 : correspondance partielle par mot-clé
     if (!realKey) {
-      realKey = Object.keys(ALL_DATA[0]).find(function(k) { return k.toLowerCase().startsWith(variable); });
+      const keywords = varKeywords[variable] || [variable];
+      for (const kw of keywords) {
+        const found = allDataKeys.find(function(k) { return k.toLowerCase().includes(kw.toLowerCase()); });
+        if (found) { realKey = found; break; }
+      }
     }
+
+    // Passe 3 : commence par le code variable
+    if (!realKey) {
+      realKey = allDataKeys.find(function(k) { return k.toLowerCase().startsWith(variable + '_') || k.toLowerCase() === variable; });
+    }
+
+    // Log pour débogage
+    console.log('Variable:', variable, '| Clé détectée:', realKey, '| Clés disponibles:', allDataKeys);
 
     const valeurs = ALL_DATA
       .map(function(r) { return realKey ? parseFloat(r[realKey]) : null; })
@@ -1070,13 +1020,10 @@ async function chargerDonnees() {
     if (statEls[5]) statEls[5].textContent = lbls[2];
 
     const nRec = ALL_DATA.length.toLocaleString('fr-CA');
-    ['carte', 'tableau'].forEach(function(id) {
+    ['graphique', 'carte', 'tableau'].forEach(function(id) {
       const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
-      if (ph) ph.innerHTML = '<strong>' + nRec + ' enregistrements</strong> chargés pour <strong>' + station + '</strong>.';
+      if (ph) ph.innerHTML = '<strong>' + nRec + ' enregistrements</strong> chargés pour <strong>' + station + '</strong>.<br>Variable détectée : <code>' + (realKey || '?') + '</code>';
     });
-
-    // Afficher le graphique
-    afficherGraphique(station, variable, realKey);
 
     console.log('Données chargées :', ALL_DATA.length, 'enregistrements');
     console.log('Clé variable :', realKey);
@@ -1089,146 +1036,6 @@ async function chargerDonnees() {
     hideLoader();
     btn.disabled    = false;
     btn.textContent = '⬇ Charger les données';
-  }
-}
-
-// ══ GRAPHIQUE ══
-let monChart = null;
-let typeGraphique = 'line';
-let dernierStation = '';
-let derniereVariable = '';
-let derniereRealKey  = '';
-
-const LABELS_VARIABLE = {
-  t:  'Température sèche (°C)',
-  tf: 'Température humide (°C)',
-  hr: 'Humidité relative (%)',
-  pa: 'Pression atmosphérique (hPa)',
-  rs: 'Rayonnement solaire (kJ/m²/h)',
-  vv: 'Vitesse du vent (km/h)',
-  dv: 'Direction du vent (°)'
-};
-
-function afficherGraphique(station, variable, realKey) {
-  dernierStation   = station;
-  derniereVariable = variable;
-  derniereRealKey  = realKey;
-
-  // Basculer placeholder ↔ contenu
-  document.getElementById('graphique-placeholder').style.display = 'none';
-  document.getElementById('graphique-contenu').style.display     = 'block';
-
-  // Titre
-  const varLabel = LABELS_VARIABLE[variable] || variable;
-  document.getElementById('graphique-titre').textContent =
-    varLabel + ' — ' + station;
-  document.getElementById('graphique-sous-titre').textContent =
-    ALL_DATA.length.toLocaleString('fr-CA') + ' enregistrements';
-
-  // Construire les labels (date + heure) et les valeurs
-  const labels  = ALL_DATA.map(function(r) {
-    const date  = (r.date_locale || '').substring(0, 10);
-    const heure = r.heure_locale !== undefined ? String(r.heure_locale).padStart(2, '0') + 'h' : '';
-    return date + (heure ? ' ' + heure : '');
-  });
-
-  const valeurs = ALL_DATA.map(function(r) {
-    return realKey ? parseFloat(r[realKey]) : null;
-  });
-
-  // Réduire les labels si trop de points (afficher 1 sur N)
-  const maxLabels = 48;
-  const step = Math.ceil(labels.length / maxLabels);
-  const labelsReduits = labels.map(function(l, i) {
-    return i % step === 0 ? l : '';
-  });
-
-  // Couleurs OTERAUD
-  const couleurLigne = '#62878b';
-  const couleurFond  = 'rgba(98,135,139,0.12)';
-  const couleurBarre = '#62878b';
-
-  const dataset = typeGraphique === 'line'
-    ? {
-        label: varLabel,
-        data: valeurs,
-        borderColor: couleurLigne,
-        backgroundColor: couleurFond,
-        borderWidth: 1.5,
-        pointRadius: valeurs.length > 200 ? 0 : 2,
-        pointHoverRadius: 4,
-        fill: true,
-        tension: 0.3
-      }
-    : {
-        label: varLabel,
-        data: valeurs,
-        backgroundColor: couleurBarre,
-        borderRadius: 3,
-        borderSkipped: false
-      };
-
-  // Détruire l'ancien graphique si existant
-  if (monChart) { monChart.destroy(); monChart = null; }
-
-  const ctx = document.getElementById('monGraphique').getContext('2d');
-  monChart = new Chart(ctx, {
-    type: typeGraphique,
-    data: { labels: labelsReduits, datasets: [dataset] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: function(items) { return labels[items[0].dataIndex]; },
-            label: function(item) {
-              const v = item.raw;
-              if (v === null || isNaN(v)) return 'Donnée manquante';
-              return varLabel + ' : ' + v.toFixed(1);
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          ticks: {
-            font: { family: 'Montserrat', size: 10 },
-            color: '#999',
-            maxRotation: 45
-          },
-          grid: { color: 'rgba(0,0,0,0.04)' }
-        },
-        y: {
-          ticks: {
-            font: { family: 'Montserrat', size: 11 },
-            color: '#666'
-          },
-          grid: { color: 'rgba(0,0,0,0.06)' },
-          title: {
-            display: true,
-            text: varLabel,
-            font: { family: 'Montserrat', size: 11 },
-            color: '#888'
-          }
-        }
-      }
-    }
-  });
-
-  // Info en bas
-  document.getElementById('graphique-info').textContent =
-    'Survol pour détails — ' + ALL_DATA.length.toLocaleString('fr-CA') + ' points';
-}
-
-function setTypeGraphique(type, btn) {
-  typeGraphique = type;
-  document.querySelectorAll('.btn-type').forEach(function(b) { b.classList.remove('active'); });
-  btn.classList.add('active');
-  if (ALL_DATA.length > 0 && derniereRealKey) {
-    afficherGraphique(dernierStation, derniereVariable, derniereRealKey);
   }
 }
 
