@@ -787,8 +787,9 @@ footer .footer-credits {
 
 <script>
 // ══ CONFIGURATION ══
-const API_URL  = '/api/meteo'; // Fonction Netlify proxy
-let   ALL_DATA = [];           // Données chargées en mémoire
+const API_URL = '/api/meteo'; // Fonction Netlify proxy
+let ALL_DATA  = [];           // Données chargées en mémoire
+let DATE_MAX  = null;         // Dernière date disponible dans la source HQ
 
 // ══ NAVIGATION ══
 function showPage(id) {
@@ -803,63 +804,6 @@ function showPage(id) {
     }
   });
 }
-
-// ══ RACCOURCIS PÉRIODE ══
-let activePeriodDays = 7;
-let DATE_MAX = null; // Dernière date disponible dans la source HQ
-
-// Appelle la fonction Netlify pour récupérer la date max disponible
-async function chargerDateMax() {
-  const badge = document.getElementById('badge-date-max');
-  try {
-    const res  = await fetch('/api/meteo?dateMax=1');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data.dateMax) {
-      DATE_MAX = data.dateMax; // format YYYY-MM-DD
-      badge.textContent = 'Données jusqu\'au ' + DATE_MAX;
-      // Bloquer le champ date-fin à cette valeur maximale
-      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
-    } else {
-      throw new Error('dateMax absent de la réponse');
-    }
-  } catch (e) {
-    badge.textContent = 'Date inconnue';
-    console.warn('chargerDateMax :', e.message);
-  }
-  // Dans tous les cas, initialiser les dates après (avec DATE_MAX ou fallback)
-  initDates();
-}
-
-function setPeriod(days, btn) {
-  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  activePeriodDays = days;
-  const customDates = document.getElementById('custom-dates');
-  if (days === 0) {
-    customDates.style.display = 'flex';
-  } else {
-    customDates.style.display = 'none';
-    // Borne supérieure = DATE_MAX si disponible, sinon aujourd'hui
-    const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
-    const debut = new Date(fin);
-    debut.setDate(fin.getDate() - days);
-    document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
-    document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
-  }
-}
-
-// Initialise les dates (7 j en arrière depuis DATE_MAX ou aujourd'hui)
-function initDates() {
-  const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
-  const debut = new Date(fin);
-  debut.setDate(fin.getDate() - 7);
-  document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
-  document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
-}
-
-// Lancer au chargement de la page
-chargerDateMax();
 
 // ══ UTILITAIRES ══
 function showLoader(msg, progress) {
@@ -878,17 +822,61 @@ function showError(msg) {
 function cacherErreur() {
   document.getElementById('error-bar').classList.remove('visible');
 }
-
-// Formatage des valeurs selon la variable
 function fmtVal(v, variable) {
   if (v === null || v === undefined) return '—';
   const n = parseFloat(v);
   if (isNaN(n)) return '—';
-  const unites = {
-    t: '°C', tf: '°C', hr: '%', pa: ' hPa',
-    rs: ' kJ/m²/h', vv: ' km/h', dv: '°'
-  };
+  const unites = { t: '°C', tf: '°C', hr: '%', pa: ' hPa', rs: ' kJ/m²/h', vv: ' km/h', dv: '°' };
   return n.toFixed(1) + (unites[variable] || '');
+}
+
+// ══ GESTION DES DATES ══
+let activePeriodDays = 7;
+
+function initDates() {
+  const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+  const debut = new Date(fin);
+  debut.setDate(fin.getDate() - 7);
+  document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
+  document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+}
+
+function setPeriod(days, btn) {
+  document.querySelectorAll('.btn-period').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activePeriodDays = days;
+  const customDates = document.getElementById('custom-dates');
+  if (days === 0) {
+    customDates.style.display = 'flex';
+  } else {
+    customDates.style.display = 'none';
+    const fin   = DATE_MAX ? new Date(DATE_MAX) : new Date();
+    const debut = new Date(fin);
+    debut.setDate(fin.getDate() - days);
+    document.getElementById('date-fin').value   = fin.toISOString().split('T')[0];
+    document.getElementById('date-debut').value = debut.toISOString().split('T')[0];
+  }
+}
+
+// ══ DATE MAX VIA NETLIFY ══
+async function chargerDateMax() {
+  const badge = document.getElementById('badge-date-max');
+  try {
+    const res = await fetch('/api/meteo?dateMax=1');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.dateMax) {
+      DATE_MAX = data.dateMax;
+      badge.textContent = 'Donn\u00e9es jusqu\'au ' + DATE_MAX;
+      document.getElementById('date-fin').setAttribute('max', DATE_MAX);
+    } else {
+      throw new Error('dateMax absent');
+    }
+  } catch (e) {
+    badge.textContent = 'Date inconnue';
+    console.warn('chargerDateMax :', e.message);
+  }
+  initDates();
 }
 
 // ══ CHARGEMENT VIA LA FONCTION NETLIFY ══
@@ -898,52 +886,47 @@ async function chargerDonnees() {
   const dateDebut = document.getElementById('date-debut').value;
   const dateFin   = document.getElementById('date-fin').value;
 
-  // Validation
   if (!station)               { showError('Veuillez choisir une station.'); return; }
-  if (!dateDebut || !dateFin) { showError('Veuillez définir une période.'); return; }
-  if (dateDebut > dateFin)    { showError('La date de début doit être antérieure à la date de fin.'); return; }
+  if (!dateDebut || !dateFin) { showError('Veuillez d\u00e9finir une p\u00e9riode.'); return; }
+  if (dateDebut > dateFin)    { showError('La date de d\u00e9but doit \u00eatre ant\u00e9rieure \u00e0 la date de fin.'); return; }
 
   cacherErreur();
   ALL_DATA = [];
   const btn = document.getElementById('btn-charger');
   btn.disabled    = true;
-  btn.textContent = '⏳ Chargement…';
+  btn.textContent = '\u23f3 Chargement\u2026';
 
   try {
-    showLoader('Connexion à l'API Hydro-Québec…');
-
-    // Appel à la fonction Netlify (proxy côté serveur)
+    showLoader('Connexion \u00e0 l\u2019API Hydro-Qu\u00e9bec\u2026');
     const params = new URLSearchParams({ station, dateDebut, dateFin, variable });
-    const res    = await fetch(`${API_URL}?${params}`);
+    const res    = await fetch(API_URL + '?' + params);
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: `Erreur HTTP ${res.status}` }));
-      throw new Error(err.error || `Erreur HTTP ${res.status}`);
+      const err = await res.json().catch(() => ({ error: 'Erreur HTTP ' + res.status }));
+      throw new Error(err.error || 'Erreur HTTP ' + res.status);
     }
 
-    showLoader('Traitement des données…');
+    showLoader('Traitement des donn\u00e9es\u2026');
     const data = await res.json();
 
     if (!data.results || data.results.length === 0) {
-      throw new Error(`Aucune donnée trouvée pour ${station} entre ${dateDebut} et ${dateFin}.`);
+      throw new Error('Aucune donn\u00e9e trouv\u00e9e pour ' + station + ' entre ' + dateDebut + ' et ' + dateFin + '.');
     }
 
     ALL_DATA = data.results;
 
-    // ── Calcul des statistiques ──
-    // Détecter la clé de la variable dans les résultats
+    // D\u00e9tecter la cl\u00e9 de la variable
     const varKeys = {
-      t: ['t_c', 't', 'température [°c]'],
-      tf: ['tf_c', 'tf', 'température humide [°c]'],
-      hr: ['hr', 'humidité relative [%]'],
-      pa: ['pa_hpa', 'pa', 'pression atmosphérique [hpa]'],
-      rs: ['rs_kjm2h', 'rs', 'rayonnement solaire total sur une surface horizontale [kj/m²/h]'],
+      t:  ['t_c', 't', 'temp\u00e9rature [\u00b0c]'],
+      tf: ['tf_c', 'tf', 'temp\u00e9rature humide [\u00b0c]'],
+      hr: ['hr', 'humidit\u00e9 relative [%]'],
+      pa: ['pa_hpa', 'pa', 'pression atmosph\u00e9rique [hpa]'],
+      rs: ['rs_kjm2h', 'rs', 'rayonnement solaire total sur une surface horizontale [kj/m\u00b2/h]'],
       vv: ['vv_kmh', 'vv', 'vitesse du vent [km/h]'],
-      dv: ['dv', 'direction du vent [0-360°]']
+      dv: ['dv', 'direction du vent [0-360\u00b0]']
     };
     const candidates = varKeys[variable] || [variable];
-    const allKeys    = Object.keys(ALL_DATA[0]).map(k => k.toLowerCase());
-    let realKey      = null;
+    let realKey = null;
     for (const c of candidates) {
       const found = Object.keys(ALL_DATA[0]).find(k => k.toLowerCase() === c.toLowerCase());
       if (found) { realKey = found; break; }
@@ -957,24 +940,22 @@ async function chargerDonnees() {
     const vMax = valeurs.length ? Math.max(...valeurs) : null;
     const vMoy = valeurs.length ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length : null;
 
-    // ── Mise à jour barre d'état ──
-    document.getElementById('s-station').textContent        = station;
-    document.getElementById('s-periode').textContent        = dateDebut + ' → ' + dateFin;
+    document.getElementById('s-station').textContent         = station;
+    document.getElementById('s-periode').textContent         = dateDebut + ' \u2192 ' + dateFin;
     document.getElementById('s-enregistrements').textContent = ALL_DATA.length.toLocaleString('fr-CA');
-    document.getElementById('s-min').textContent            = fmtVal(vMin, variable);
-    document.getElementById('s-moy').textContent            = fmtVal(vMoy, variable);
-    document.getElementById('s-max').textContent            = fmtVal(vMax, variable);
+    document.getElementById('s-min').textContent             = fmtVal(vMin, variable);
+    document.getElementById('s-moy').textContent             = fmtVal(vMoy, variable);
+    document.getElementById('s-max').textContent             = fmtVal(vMax, variable);
     document.getElementById('status-bar').classList.add('visible');
 
-    // Labels dynamiques selon la variable
     const varLabels = {
-      t:  ['Min °C','Moy. °C','Max °C'],
-      tf: ['Min °C','Moy. °C','Max °C'],
+      t:  ['Min \u00b0C','Moy. \u00b0C','Max \u00b0C'],
+      tf: ['Min \u00b0C','Moy. \u00b0C','Max \u00b0C'],
       hr: ['Min %','Moy. %','Max %'],
       pa: ['Min hPa','Moy. hPa','Max hPa'],
-      rs: ['Min kJ/m²/h','Moy. kJ/m²/h','Max kJ/m²/h'],
+      rs: ['Min kJ/m\u00b2/h','Moy. kJ/m\u00b2/h','Max kJ/m\u00b2/h'],
       vv: ['Min km/h','Moy. km/h','Max km/h'],
-      dv: ['Min °','Moy. °','Max °']
+      dv: ['Min \u00b0','Moy. \u00b0','Max \u00b0']
     };
     const lbls = varLabels[variable] || ['Min','Moy.','Max'];
     const statEls = document.querySelectorAll('#status-bar .stat .stat-lbl');
@@ -982,16 +963,14 @@ async function chargerDonnees() {
     if (statEls[4]) statEls[4].textContent = lbls[1];
     if (statEls[5]) statEls[5].textContent = lbls[2];
 
-    // Message dans les pages
     const nRec = ALL_DATA.length.toLocaleString('fr-CA');
-    ['graphique', 'carte', 'tableau'].forEach(id => {
+    ['graphique', 'carte', 'tableau'].forEach(function(id) {
       const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
-      if (ph) ph.innerHTML =
-        `<strong>${nRec} enregistrements</strong> chargés pour <strong>${station}</strong>.<br>Variable détectée : <code>${realKey || '?'}</code>`;
+      if (ph) ph.innerHTML = '<strong>' + nRec + ' enregistrements</strong> charg\u00e9s pour <strong>' + station + '</strong>.<br>Variable d\u00e9tect\u00e9e\u00a0: <code>' + (realKey || '?') + '</code>';
     });
 
-    console.log('✅ Données chargées :', ALL_DATA.length, 'enregistrements');
-    console.log('Clé variable :', realKey);
+    console.log('\u2705 Donn\u00e9es charg\u00e9es :', ALL_DATA.length, 'enregistrements');
+    console.log('Cl\u00e9 variable :', realKey);
     console.log('Exemple :', ALL_DATA[0]);
 
   } catch (err) {
@@ -1000,9 +979,12 @@ async function chargerDonnees() {
   } finally {
     hideLoader();
     btn.disabled    = false;
-    btn.textContent = '⬇ Charger les données';
+    btn.textContent = '\u2b07 Charger les donn\u00e9es';
   }
 }
+
+// ══ LANCEMENT AU CHARGEMENT ══
+chargerDateMax();
 </script>
 
 </body>
