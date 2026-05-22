@@ -787,9 +787,9 @@ footer .footer-credits {
 
 <script>
 // ══ CONFIGURATION ══
-const API_URL = '/api/meteo'; // Fonction Netlify proxy
-let ALL_DATA  = [];           // Données chargées en mémoire
-let DATE_MAX  = null;         // Dernière date disponible dans la source HQ
+const API_URL = '/api/meteo';
+let ALL_DATA  = [];
+let DATE_MAX  = null;
 
 // ══ NAVIGATION ══
 function showPage(id) {
@@ -862,12 +862,12 @@ function setPeriod(days, btn) {
 async function chargerDateMax() {
   const badge = document.getElementById('badge-date-max');
   try {
-    const res = await fetch('/api/meteo?dateMax=1');
+    const res  = await fetch('/api/meteo?dateMax=1');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data.dateMax) {
       DATE_MAX = data.dateMax;
-      badge.textContent = 'Donn\u00e9es jusqu\'au ' + DATE_MAX;
+      badge.textContent = 'Données jusqu’au ' + DATE_MAX;
       document.getElementById('date-fin').setAttribute('max', DATE_MAX);
     } else {
       throw new Error('dateMax absent');
@@ -879,7 +879,7 @@ async function chargerDateMax() {
   initDates();
 }
 
-// ══ CHARGEMENT VIA LA FONCTION NETLIFY ══
+// ══ CHARGEMENT VIA NETLIFY ══
 async function chargerDonnees() {
   const station   = document.getElementById('sel-station').value;
   const variable  = document.getElementById('sel-variable').value;
@@ -887,17 +887,17 @@ async function chargerDonnees() {
   const dateFin   = document.getElementById('date-fin').value;
 
   if (!station)               { showError('Veuillez choisir une station.'); return; }
-  if (!dateDebut || !dateFin) { showError('Veuillez d\u00e9finir une p\u00e9riode.'); return; }
-  if (dateDebut > dateFin)    { showError('La date de d\u00e9but doit \u00eatre ant\u00e9rieure \u00e0 la date de fin.'); return; }
+  if (!dateDebut || !dateFin) { showError('Veuillez définir une période.'); return; }
+  if (dateDebut > dateFin)    { showError('La date de début doit être antérieure à la date de fin.'); return; }
 
   cacherErreur();
   ALL_DATA = [];
   const btn = document.getElementById('btn-charger');
   btn.disabled    = true;
-  btn.textContent = '\u23f3 Chargement\u2026';
+  btn.textContent = '⏳ Chargement…';
 
   try {
-    showLoader('Connexion \u00e0 l\u2019API Hydro-Qu\u00e9bec\u2026');
+    showLoader('Connexion à l’API Hydro-Québec…');
     const params = new URLSearchParams({ station, dateDebut, dateFin, variable });
     const res    = await fetch(API_URL + '?' + params);
 
@@ -906,30 +906,32 @@ async function chargerDonnees() {
       throw new Error(err.error || 'Erreur HTTP ' + res.status);
     }
 
-    showLoader('Traitement des donn\u00e9es\u2026');
+    showLoader('Traitement des données…');
     const data = await res.json();
 
     if (!data.results || data.results.length === 0) {
-      throw new Error('Aucune donn\u00e9e trouv\u00e9e pour ' + station + ' entre ' + dateDebut + ' et ' + dateFin + '.');
+      throw new Error('Aucune donnée trouvée pour ' + station + ' entre ' + dateDebut + ' et ' + dateFin + '.');
     }
 
     ALL_DATA = data.results;
 
-    // D\u00e9tecter la cl\u00e9 de la variable
     const varKeys = {
-      t:  ['t_c', 't', 'temp\u00e9rature [\u00b0c]'],
-      tf: ['tf_c', 'tf', 'temp\u00e9rature humide [\u00b0c]'],
-      hr: ['hr', 'humidit\u00e9 relative [%]'],
-      pa: ['pa_hpa', 'pa', 'pression atmosph\u00e9rique [hpa]'],
-      rs: ['rs_kjm2h', 'rs', 'rayonnement solaire total sur une surface horizontale [kj/m\u00b2/h]'],
-      vv: ['vv_kmh', 'vv', 'vitesse du vent [km/h]'],
-      dv: ['dv', 'direction du vent [0-360\u00b0]']
+      t:  ['t_c', 't'],
+      tf: ['tf_c', 'tf'],
+      hr: ['hr'],
+      pa: ['pa_hpa', 'pa'],
+      rs: ['rs_kjm2h', 'rs'],
+      vv: ['vv_kmh', 'vv'],
+      dv: ['dv']
     };
     const candidates = varKeys[variable] || [variable];
     let realKey = null;
     for (const c of candidates) {
       const found = Object.keys(ALL_DATA[0]).find(k => k.toLowerCase() === c.toLowerCase());
       if (found) { realKey = found; break; }
+    }
+    if (!realKey) {
+      realKey = Object.keys(ALL_DATA[0]).find(k => k.toLowerCase().startsWith(variable));
     }
 
     const valeurs = ALL_DATA
@@ -941,7 +943,7 @@ async function chargerDonnees() {
     const vMoy = valeurs.length ? valeurs.reduce((a, b) => a + b, 0) / valeurs.length : null;
 
     document.getElementById('s-station').textContent         = station;
-    document.getElementById('s-periode').textContent         = dateDebut + ' \u2192 ' + dateFin;
+    document.getElementById('s-periode').textContent         = dateDebut + ' → ' + dateFin;
     document.getElementById('s-enregistrements').textContent = ALL_DATA.length.toLocaleString('fr-CA');
     document.getElementById('s-min').textContent             = fmtVal(vMin, variable);
     document.getElementById('s-moy').textContent             = fmtVal(vMoy, variable);
@@ -949,13 +951,13 @@ async function chargerDonnees() {
     document.getElementById('status-bar').classList.add('visible');
 
     const varLabels = {
-      t:  ['Min \u00b0C','Moy. \u00b0C','Max \u00b0C'],
-      tf: ['Min \u00b0C','Moy. \u00b0C','Max \u00b0C'],
+      t:  ['Min °C','Moy. °C','Max °C'],
+      tf: ['Min °C','Moy. °C','Max °C'],
       hr: ['Min %','Moy. %','Max %'],
       pa: ['Min hPa','Moy. hPa','Max hPa'],
-      rs: ['Min kJ/m\u00b2/h','Moy. kJ/m\u00b2/h','Max kJ/m\u00b2/h'],
+      rs: ['Min kJ/m²/h','Moy. kJ/m²/h','Max kJ/m²/h'],
       vv: ['Min km/h','Moy. km/h','Max km/h'],
-      dv: ['Min \u00b0','Moy. \u00b0','Max \u00b0']
+      dv: ['Min °','Moy. °','Max °']
     };
     const lbls = varLabels[variable] || ['Min','Moy.','Max'];
     const statEls = document.querySelectorAll('#status-bar .stat .stat-lbl');
@@ -966,11 +968,11 @@ async function chargerDonnees() {
     const nRec = ALL_DATA.length.toLocaleString('fr-CA');
     ['graphique', 'carte', 'tableau'].forEach(function(id) {
       const ph = document.querySelector('#page-' + id + ' .page-placeholder p');
-      if (ph) ph.innerHTML = '<strong>' + nRec + ' enregistrements</strong> charg\u00e9s pour <strong>' + station + '</strong>.<br>Variable d\u00e9tect\u00e9e\u00a0: <code>' + (realKey || '?') + '</code>';
+      if (ph) ph.innerHTML = '<strong>' + nRec + ' enregistrements</strong> chargés pour <strong>' + station + '</strong>.<br>Variable détectée : <code>' + (realKey || '?') + '</code>';
     });
 
-    console.log('\u2705 Donn\u00e9es charg\u00e9es :', ALL_DATA.length, 'enregistrements');
-    console.log('Cl\u00e9 variable :', realKey);
+    console.log('✅ Données chargées :', ALL_DATA.length, 'enregistrements');
+    console.log('Clé variable :', realKey);
     console.log('Exemple :', ALL_DATA[0]);
 
   } catch (err) {
@@ -979,11 +981,11 @@ async function chargerDonnees() {
   } finally {
     hideLoader();
     btn.disabled    = false;
-    btn.textContent = '\u2b07 Charger les donn\u00e9es';
+    btn.textContent = '⬇ Charger les données';
   }
 }
 
-// ══ LANCEMENT AU CHARGEMENT ══
+// ══ LANCEMENT AU CHARGEMENT DE LA PAGE ══
 chargerDateMax();
 </script>
 
