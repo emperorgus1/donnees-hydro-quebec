@@ -520,7 +520,8 @@ footer .footer-credits {
 <!-- ══ NAVIGATION PORTAIL ══ -->
 <nav class="portal-nav">
   <div class="portal-tab active" onclick="showPortalPage('applications')">Applications</div>
-  <div class="portal-tab" onclick="showPortalPage('analyse')">Analyse croisée</div>
+  <div class="portal-tab" onclick="showPortalPage('analyse')">Météo et Demande</div>
+  <div class="portal-tab" onclick="showPortalPage('secteurs')">Consommation et Demande</div>
 </nav>
 
 <main>
@@ -535,7 +536,7 @@ footer .footer-credits {
     <p><Bienvenue sur ce portail d'exploration et d'analyse des données ouvertes d'Hydro-Québec</p>
     <p>Ce portail regroupe les applications de données développées par <strong>l'OTERAUD</strong> à partir des jeux de données ouverts d'Hydro-Québec.</p>
       <p>Chaque application est un fichier HTML autonome : cliquez sur une carte pour l'ouvrir directement dans votre navigateur.</p>
-    <p>Vous retrouverez également dans le bandeau un lien vers la section : <em>Analyse croisée</em> où vous pourrez accéder à des <strong>analyses supplémentaires</strong> qui croisent les données présentées dans chacune des applications.</p>
+    <p>Vous retrouverez également dans le bandeau des liens vers des <strong>analyses supplémentaires</strong> qui croisent les données présentées dans chacune des applications.</p>
   </div>
 
   <div class="section-header">
@@ -755,6 +756,110 @@ footer .footer-credits {
 </div>
 </div><!-- /portal-analyse -->
 
+<!-- ══════════ PAGE : CONSOMMATION × DEMANDE ══════════ -->
+<div class="portal-page" id="portal-secteurs">
+<div class="analyse-wrap">
+
+  <div class="analyse-intro">
+    <span class="intro-icon">⚡</span>
+    <span>Cette analyse croise la <strong>consommation électrique mensuelle par secteur d'activité</strong> (Hydro-Québec, 2016–2025) avec la <strong>demande mensuelle agrégée</strong> (Hydro-Québec, 2019–2024). La jointure se fait sur le <strong>mois (YYYY-MM)</strong>, ce qui restreint la période commune à <strong>2019–2024</strong>. Vous pouvez filtrer par région et par secteur, et choisir parmi plusieurs types de visualisation.</span>
+  </div>
+
+  <!-- Contrôles -->
+  <div class="analyse-controls">
+
+    <div class="ctrl-group">
+      <label>Région</label>
+      <select id="sc-region" style="min-width:200px;">
+        <option value="">Toutes les régions</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Secteur</label>
+      <select id="sc-secteur" style="min-width:175px;">
+        <option value="">Tous les secteurs</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Granularité</label>
+      <select id="sc-gran">
+        <option value="month">Mensuelle</option>
+        <option value="year">Annuelle</option>
+      </select>
+    </div>
+
+    <button class="btn-analyser" id="btn-analyser-sc" onclick="lancerAnalyseSecteurs()">⬇ Lancer l'analyse</button>
+  </div>
+
+  <!-- Loader -->
+  <div class="analyse-loader" id="sc-loader">
+    <div class="analyse-loader-spinner"></div>
+    <span id="sc-loader-msg">Chargement…</span>
+  </div>
+
+  <!-- Erreur -->
+  <div class="analyse-error" id="sc-error"></div>
+
+  <!-- Stats -->
+  <div class="analyse-stats" id="sc-stats">
+    <div class="a-stat">
+      <div class="a-stat-val" id="sc-nb-mois">—</div>
+      <div class="a-stat-lbl">Mois analysés</div>
+    </div>
+    <div class="a-stat-divider"></div>
+    <div class="a-stat">
+      <div class="a-stat-val" id="sc-r2">—</div>
+      <div class="a-stat-lbl">Corrélation R²</div>
+    </div>
+    <div class="a-stat-divider"></div>
+    <div class="a-stat">
+      <div class="a-stat-val" id="sc-conso-total">—</div>
+      <div class="a-stat-lbl">Consommation totale (GWh)</div>
+    </div>
+    <div class="a-stat-divider"></div>
+    <div class="a-stat">
+      <div class="a-stat-val" id="sc-mw-moy">—</div>
+      <div class="a-stat-lbl">Demande moy. (MW)</div>
+    </div>
+  </div>
+
+  <!-- Graphiques -->
+  <div class="analyse-charts" id="sc-charts" style="display:none;">
+
+    <!-- Graphique 1 : Double axe Y temporel -->
+    <div class="chart-card">
+      <h3>Consommation & demande — évolution temporelle</h3>
+      <p id="sc-chart1-desc">Consommation (GWh, axe gauche) et demande moyenne mensuelle en MW (axe droit) sur la même période.</p>
+      <div class="chart-wrap" style="height:400px;">
+        <canvas id="sc-chart-temporal"></canvas>
+      </div>
+    </div>
+
+    <!-- Graphique 2 : Nuage de points -->
+    <div class="chart-card">
+      <h3>Nuage de points — Consommation (GWh) vs Demande (MW)</h3>
+      <p id="sc-chart2-desc">Chaque point représente un mois. La droite de régression linéaire indique la tendance générale.</p>
+      <div class="chart-wrap" style="height:360px;">
+        <canvas id="sc-chart-scatter"></canvas>
+      </div>
+    </div>
+
+    <!-- Graphique 3 : Part de chaque secteur -->
+    <div class="chart-card">
+      <h3>Répartition de la consommation par secteur</h3>
+      <p>Consommation cumulée (GWh) sur la période sélectionnée, par secteur d'activité.</p>
+      <div class="chart-wrap" style="height:320px;">
+        <canvas id="sc-chart-secteurs"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div><!-- /portal-secteurs -->
+
 </main>
 
 <footer>
@@ -789,9 +894,12 @@ function showPortalPage(name) {
   document.querySelectorAll('.portal-page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('portal-' + name).classList.add('active');
+  const map = { applications: 0, analyse: 1, secteurs: 2 };
   const tabs = document.querySelectorAll('.portal-tab');
-  const idx = name === 'applications' ? 0 : 1;
+  const idx = map[name] ?? 0;
   if (tabs[idx]) tabs[idx].classList.add('active');
+  // Charger les selects secteurs si nécessaire
+  if (name === 'secteurs' && !scSelectsReady) initSCSelects();
 }
 
 /* ══ ANALYSE CROISÉE ══ */
@@ -1187,6 +1295,271 @@ async function lancerAnalyse() {
 
 // Initialiser le lieu par défaut
 document.getElementById('ac-lieu').value = '48.4333,-71.0667';
+
+/* ══════════════════════════════════════════════════════
+   ANALYSE CROISÉE — CONSOMMATION × DEMANDE
+══════════════════════════════════════════════════════ */
+const API_CONSO   = '/api/hydroquebec';
+const API_DEMANDE_SC = '/api/demande-electricite';
+
+let scConsoCache  = null;
+let scDemandeCache = null;
+let scSelectsReady = false;
+let scChartTemporal = null, scChartScatter = null, scChartSecteurs = null;
+
+const SECTEUR_COLORS_SC = {
+  'INDUSTRIEL':     '#62878b',
+  'RÉSIDENTIEL':    '#5a8a3e',
+  'COMMERCIAL':     '#f59e19',
+  'INSTITUTIONNEL': '#a45a37',
+  'AGRICOLE':       '#c4987c',
+};
+const MOIS_COLORS_SC = ['#62878b','#5a8a3e','#f59e19','#a45a37','#c4987c',
+  '#3a6060','#d4820f','#7a3d22','#9fbbbd','#fbd07a','#d4a082','#2d4f50'];
+
+function showSCLoader(msg) {
+  document.getElementById('sc-loader-msg').textContent = msg;
+  document.getElementById('sc-loader').classList.add('visible');
+}
+function hideSCLoader() { document.getElementById('sc-loader').classList.remove('visible'); }
+function showSCError(msg) {
+  const el = document.getElementById('sc-error');
+  el.textContent = '⚠ ' + msg; el.classList.add('visible');
+}
+function hideSCError() { document.getElementById('sc-error').classList.remove('visible'); }
+
+/* ── Pearson & régression (réutilisés) ── */
+function pearsonR2(xs, ys) {
+  const n = xs.length; if (n < 2) return 0;
+  const mx = xs.reduce((a,b)=>a+b,0)/n, my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, dx2=0, dy2=0;
+  for (let i=0;i<n;i++) { const dx=xs[i]-mx, dy=ys[i]-my; num+=dx*dy; dx2+=dx*dx; dy2+=dy*dy; }
+  const r = (dx2*dy2>0) ? num/Math.sqrt(dx2*dy2) : 0;
+  return r*r;
+}
+function linReg2(xs, ys) {
+  const n=xs.length, mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for (let i=0;i<n;i++) { num+=(xs[i]-mx)*(ys[i]-my); den+=(xs[i]-mx)**2; }
+  const slope=den?num/den:0;
+  return { slope, intercept: my - slope*mx };
+}
+
+/* ── Pré-remplissage des selects depuis le cache conso ── */
+async function initSCSelects() {
+  if (!scConsoCache) {
+    showSCLoader('Chargement du référentiel régions/secteurs…');
+    try {
+      const res = await fetch(API_CONSO);
+      if (!res.ok) throw new Error('Erreur serveur (' + res.status + ')');
+      scConsoCache = await res.json();
+    } catch(e) { showSCError(e.message); hideSCLoader(); return; }
+    hideSCLoader();
+  }
+  const regions  = [...new Set(scConsoCache.map(d=>d.region))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const secteurs = [...new Set(scConsoCache.map(d=>d.secteur))].sort();
+  const selR = document.getElementById('sc-region');
+  const selS = document.getElementById('sc-secteur');
+  regions.forEach(r  => { const o=document.createElement('option'); o.value=o.textContent=r; selR.appendChild(o); });
+  secteurs.forEach(s => { const o=document.createElement('option'); o.value=o.textContent=s; selS.appendChild(o); });
+  scSelectsReady = true;
+}
+
+async function lancerAnalyseSecteurs() {
+  hideSCError();
+  document.getElementById('sc-stats').classList.remove('visible');
+  document.getElementById('sc-charts').style.display = 'none';
+
+  const region  = document.getElementById('sc-region').value;
+  const secteur = document.getElementById('sc-secteur').value;
+  const gran    = document.getElementById('sc-gran').value;
+  const btn = document.getElementById('btn-analyser-sc');
+  btn.disabled = true; btn.textContent = '⏳ Analyse en cours…';
+
+  try {
+    /* 1. Charger consommation */
+    if (!scConsoCache) {
+      showSCLoader('Chargement des données de consommation par secteur…');
+      const res = await fetch(API_CONSO);
+      if (!res.ok) throw new Error('Erreur API consommation (' + res.status + ')');
+      scConsoCache = await res.json();
+      if (!scSelectsReady) {
+        const regions  = [...new Set(scConsoCache.map(d=>d.region))].sort((a,b)=>a.localeCompare(b,'fr'));
+        const secteurs = [...new Set(scConsoCache.map(d=>d.secteur))].sort();
+        const selR = document.getElementById('sc-region');
+        const selS = document.getElementById('sc-secteur');
+        while (selR.options.length > 1) selR.remove(1);
+        while (selS.options.length > 1) selS.remove(1);
+        regions.forEach(r  => { const o=document.createElement('option'); o.value=o.textContent=r; selR.appendChild(o); });
+        secteurs.forEach(s => { const o=document.createElement('option'); o.value=o.textContent=s; selS.appendChild(o); });
+        scSelectsReady = true;
+      }
+    }
+
+    /* 2. Charger demande */
+    if (!scDemandeCache) {
+      showSCLoader('Chargement des données de demande électricité…');
+      const res = await fetch(API_DEMANDE_SC);
+      if (!res.ok) throw new Error('Erreur API demande (' + res.status + ') — ouvrez via Netlify.');
+      scDemandeCache = await res.json();
+    }
+
+    showSCLoader('Croisement des données…');
+
+    /* 3. Filtrer consommation (2019-2024, région, secteur) */
+    let conso = scConsoCache.filter(d => d.mois >= '2019-01' && d.mois <= '2024-12');
+    if (region)  conso = conso.filter(d => d.region  === region);
+    if (secteur) conso = conso.filter(d => d.secteur === secteur);
+
+    /* 4. Agréger consommation par mois (ou année) → GWh */
+    const consoParMois = {};
+    conso.forEach(d => {
+      const key = gran === 'year' ? d.mois.substring(0,4) : d.mois.substring(0,7);
+      consoParMois[key] = (consoParMois[key] || 0) + d.kwh / 1e6; // kWh → GWh
+    });
+
+    /* 5. Agréger demande par mois (ou année) → MW moyen */
+    const demandeParMois = {};
+    scDemandeCache.forEach(d => {
+      const moisStr = d.date ? d.date.substring(0,7) : (d.mois || '');
+      const key = gran === 'year' ? moisStr.substring(0,4) : moisStr;
+      if (!demandeParMois[key]) demandeParMois[key] = { sum:0, count:0 };
+      demandeParMois[key].sum += d.mw;
+      demandeParMois[key].count++;
+    });
+
+    /* 6. Jointure sur la clé temporelle */
+    const joined = [];
+    Object.keys(consoParMois).sort().forEach(key => {
+      if (!demandeParMois[key] || demandeParMois[key].count === 0) return;
+      joined.push({
+        key,
+        gwh: consoParMois[key],
+        mw:  demandeParMois[key].sum / demandeParMois[key].count
+      });
+    });
+
+    if (joined.length < 3) throw new Error('Pas assez de données communes (' + joined.length + ' ' + (gran==='year'?'années':'mois') + '). Vérifiez les filtres.');
+
+    /* 7. Stats */
+    const xs = joined.map(d=>d.gwh), ys = joined.map(d=>d.mw);
+    const r2 = pearsonR2(xs, ys);
+    const totalGwh = xs.reduce((a,b)=>a+b,0);
+    const moyMw    = ys.reduce((a,b)=>a+b,0) / ys.length;
+    const reg = linReg2(xs, ys);
+
+    document.getElementById('sc-nb-mois').textContent  = joined.length + (gran==='year' ? ' ans' : ' mois');
+    document.getElementById('sc-r2').textContent       = r2.toFixed(3) + (r2>0.5?' 🔴':r2>0.25?' 🟡':' 🟢');
+    document.getElementById('sc-conso-total').textContent = totalGwh.toLocaleString('fr-CA', {maximumFractionDigits:1});
+    document.getElementById('sc-mw-moy').textContent   = Math.round(moyMw).toLocaleString('fr-CA');
+    document.getElementById('sc-stats').classList.add('visible');
+
+    const periodeLabel = joined[0].key + ' → ' + joined[joined.length-1].key;
+    const filtreLabel  = [region||'Toutes régions', secteur||'Tous secteurs'].join(' · ');
+    document.getElementById('sc-chart1-desc').textContent =
+      'Consommation (GWh, axe gauche) et demande moyenne (MW, axe droit) — ' + filtreLabel + ' — ' + periodeLabel + '.';
+    document.getElementById('sc-chart2-desc').textContent =
+      'R² = ' + r2.toFixed(3) + ' · ' + (r2>0.5?'Forte corrélation':r2>0.25?'Corrélation modérée':'Faible corrélation') +
+      ' · Pente : ' + reg.slope.toFixed(2) + ' MW par GWh.';
+
+    /* 8. Graphique 1 : double axe Y temporel */
+    const labels = joined.map(d=>d.key);
+    const gwhVals = joined.map(d=>d.gwh);
+    const mwVals  = joined.map(d=>d.mw);
+
+    if (scChartTemporal) scChartTemporal.destroy();
+    scChartTemporal = new Chart(document.getElementById('sc-chart-temporal'), {
+      type:'line',
+      data:{ labels, datasets:[
+        { label:'Consommation (GWh)', data:gwhVals, borderColor:'#62878b', backgroundColor:'#62878b22',
+          borderWidth:2, pointRadius:gran==='year'?5:2, fill:true, tension:0.3, yAxisID:'y-gwh' },
+        { label:'Demande (MW)',       data:mwVals,  borderColor:'#f59e19', backgroundColor:'#f59e1922',
+          borderWidth:2, pointRadius:gran==='year'?5:2, fill:false, tension:0.3, yAxisID:'y-mw' }
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{ legend:{ display:true, labels:{ font:{ family:'Montserrat',size:11 }, boxWidth:14 } },
+          tooltip:{ callbacks:{ label: ctx => ctx.datasetIndex===0
+            ? ' Consommation : ' + ctx.parsed.y.toLocaleString('fr-CA',{maximumFractionDigits:1}) + ' GWh'
+            : ' Demande : ' + Math.round(ctx.parsed.y).toLocaleString('fr-CA') + ' MW' }}},
+        scales:{
+          x:{ ticks:{ maxTicksLimit:24, maxRotation:45, font:{size:10} }, grid:{color:'#ede8df'} },
+          'y-gwh':{ type:'linear', position:'left',
+            title:{display:true,text:'Consommation (GWh)',font:{size:10,family:'Montserrat'},color:'#3a5c5f'},
+            grid:{color:'#ede8df'}, ticks:{font:{size:10},color:'#3a5c5f',callback:v=>v.toLocaleString('fr-CA',{maximumFractionDigits:0})} },
+          'y-mw':{ type:'linear', position:'right',
+            title:{display:true,text:'Demande (MW)',font:{size:10,family:'Montserrat'},color:'#c17b0e'},
+            grid:{display:false}, ticks:{font:{size:10},color:'#c17b0e',callback:v=>v.toLocaleString('fr-CA')} }
+        }
+      }
+    });
+
+    /* 9. Graphique 2 : nuage de points */
+    const regLine = [
+      { x:Math.min(...xs), y:reg.slope*Math.min(...xs)+reg.intercept },
+      { x:Math.max(...xs), y:reg.slope*Math.max(...xs)+reg.intercept }
+    ];
+    const ptColors = joined.map(d => {
+      if (!d.key) return '#c4987c88';
+      const m = parseInt((d.key.length===7 ? d.key.substring(5,7) : '06'));
+      return (m<=3||m>=11) ? '#62878b88' : (m>=6&&m<=8) ? '#f59e1988' : '#c4987c88';
+    });
+
+    if (scChartScatter) scChartScatter.destroy();
+    scChartScatter = new Chart(document.getElementById('sc-chart-scatter'), {
+      data:{ datasets:[
+        { type:'scatter', label:'Points (mois)', data:joined.map(d=>({x:d.gwh,y:d.mw})),
+          backgroundColor:ptColors, pointRadius:5, pointHoverRadius:7 },
+        { type:'line', label:'Régression', data:regLine,
+          borderColor:'#a45a37', borderWidth:2, borderDash:[6,3], pointRadius:0, fill:false }
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:true,labels:{font:{family:'Montserrat',size:11},boxWidth:14}},
+          tooltip:{ filter:i=>i.datasetIndex===0,
+            callbacks:{ label:ctx=>' Conso : '+ctx.parsed.x.toLocaleString('fr-CA',{maximumFractionDigits:1})+' GWh  |  Demande : '+Math.round(ctx.parsed.y).toLocaleString('fr-CA')+' MW' }}},
+        scales:{
+          x:{ title:{display:true,text:'Consommation (GWh)',font:{size:11,family:'Montserrat'}}, grid:{color:'#ede8df'}, ticks:{font:{size:10}} },
+          y:{ title:{display:true,text:'Demande moyenne (MW)',font:{size:11,family:'Montserrat'}}, grid:{color:'#ede8df'}, ticks:{font:{size:10},callback:v=>v.toLocaleString('fr-CA')} }
+        }
+      }
+    });
+
+    /* 10. Graphique 3 : répartition par secteur (sur la période filtrée) */
+    let consoPourSecteurs = scConsoCache.filter(d => d.mois >= '2019-01' && d.mois <= '2024-12');
+    if (region) consoPourSecteurs = consoPourSecteurs.filter(d => d.region === region);
+    const bySecteur = {};
+    consoPourSecteurs.forEach(d => {
+      bySecteur[d.secteur] = (bySecteur[d.secteur]||0) + d.kwh/1e6;
+    });
+    const secLabels = Object.keys(bySecteur).sort();
+    const secVals   = secLabels.map(s => bySecteur[s]);
+    const secColors = secLabels.map(s => SECTEUR_COLORS_SC[s] || '#999');
+
+    if (scChartSecteurs) scChartSecteurs.destroy();
+    scChartSecteurs = new Chart(document.getElementById('sc-chart-secteurs'), {
+      type:'bar',
+      data:{ labels:secLabels, datasets:[{ label:'Consommation (GWh)', data:secVals,
+        backgroundColor:secColors, borderRadius:5 }]},
+      options:{ responsive:true, maintainAspectRatio:false, indexAxis:'y',
+        plugins:{ legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.x.toLocaleString('fr-CA',{maximumFractionDigits:1})+' GWh'}}},
+        scales:{
+          x:{ grid:{color:'#ede8df'}, ticks:{font:{size:10},callback:v=>v.toLocaleString('fr-CA',{maximumFractionDigits:0})} },
+          y:{ grid:{display:false}, ticks:{font:{size:11,weight:'600'}} }
+        }
+      }
+    });
+
+    document.getElementById('sc-charts').style.display = 'flex';
+
+  } catch (err) {
+    showSCError(err.message);
+    console.error(err);
+  } finally {
+    hideSCLoader();
+    btn.disabled = false; btn.textContent = '⬇ Lancer l\'analyse';
+  }
+}
 </script>
 
 </body>
