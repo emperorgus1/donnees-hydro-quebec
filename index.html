@@ -454,6 +454,53 @@ footer .footer-credits {
 .a-stat-lbl { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #9a7040; }
 .a-stat-divider { width: 1px; height: 30px; background: #e8c97a; }
 
+/* ── Légende R² ── */
+.r2-legend {
+  display: none;
+  background: #fff;
+  border: 1.5px solid var(--creme);
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.5rem;
+  gap: 1.25rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.r2-legend.visible { display: flex; }
+.r2-legend-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--teal);
+  white-space: nowrap;
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+.r2-legend-desc {
+  font-size: 0.76rem;
+  color: #666;
+  line-height: 1.65;
+  flex: 1;
+  min-width: 220px;
+}
+.r2-legend-scale {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.r2-scale-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.73rem;
+  color: #555;
+  font-weight: 500;
+}
+.r2-scale-item span.emoji { font-size: 0.85rem; line-height: 1; }
+
+
 /* Cartes graphiques */
 .analyse-charts { display: flex; flex-direction: column; gap: 1.5rem; }
 .chart-card {
@@ -760,6 +807,22 @@ footer .footer-credits {
     </div>
   </div>
 
+  <!-- Légende R² -->
+  <div class="r2-legend" id="as-r2-legend">
+    <div class="r2-legend-title">À propos du R²</div>
+    <div class="r2-legend-desc">
+      Le <strong>R²</strong> (coefficient de détermination) mesure à quel point deux variables évoluent ensemble.
+      Un R² de <strong>0,80</strong> signifie que 80 % des variations de la demande s'expliquent par les variations de la variable météo sélectionnée.
+      Le reste provient d'autres facteurs (jours fériés, conjoncture, etc.).
+      <br>⚠ Le R² indique une <em>corrélation</em>, pas une <em>causalité</em>.
+    </div>
+    <div class="r2-scale-item" style="margin-left:auto; flex-direction:column; gap:5px; align-items:flex-start;">
+      <div class="r2-scale-item"><span class="emoji">🟢</span> R² &gt; 0,50 — Fort lien</div>
+      <div class="r2-scale-item"><span class="emoji">🟡</span> R² 0,25 à 0,50 — Lien modéré</div>
+      <div class="r2-scale-item"><span class="emoji">🔴</span> R² &lt; 0,25 — Faible lien</div>
+    </div>
+  </div>
+
   <!-- Graphiques -->
   <div class="analyse-charts" id="analyse-charts" style="display:none;">
 
@@ -860,6 +923,22 @@ footer .footer-credits {
     <div class="a-stat">
       <div class="a-stat-val" id="sc-mw-moy">—</div>
       <div class="a-stat-lbl">Demande moy. (MW)</div>
+    </div>
+  </div>
+
+  <!-- Légende R² -->
+  <div class="r2-legend" id="sc-r2-legend">
+    <div class="r2-legend-title">À propos du R²</div>
+    <div class="r2-legend-desc">
+      Le <strong>R²</strong> (coefficient de détermination) mesure à quel point deux variables évoluent ensemble.
+      Un R² de <strong>0,80</strong> signifie que 80 % des variations de la demande s'expliquent par les variations de la consommation sectorielle.
+      Le reste provient d'autres facteurs non capturés.
+      <br>⚠ Le R² indique une <em>corrélation</em>, pas une <em>causalité</em>.
+    </div>
+    <div class="r2-scale-item" style="margin-left:auto; flex-direction:column; gap:5px; align-items:flex-start;">
+      <div class="r2-scale-item"><span class="emoji">🟢</span> R² &gt; 0,50 — Fort lien</div>
+      <div class="r2-scale-item"><span class="emoji">🟡</span> R² 0,25 à 0,50 — Lien modéré</div>
+      <div class="r2-scale-item"><span class="emoji">🔴</span> R² &lt; 0,25 — Faible lien</div>
     </div>
   </div>
 
@@ -1060,6 +1139,7 @@ function linearRegression(xs, ys) {
 async function lancerAnalyse() {
   hideAnalyseError();
   document.getElementById('analyse-stats').classList.remove('visible');
+  document.getElementById('as-r2-legend').classList.remove('visible');
   document.getElementById('analyse-charts').style.display = 'none';
 
   const variable = document.getElementById('ac-variable').value;
@@ -1139,6 +1219,7 @@ async function lancerAnalyse() {
     document.getElementById('as-mw-max').textContent = Math.round(mwMax).toLocaleString('fr-CA');
     document.getElementById('as-lieu').textContent   = acLieuNom;
     document.getElementById('analyse-stats').classList.add('visible');
+    document.getElementById('as-r2-legend').classList.add('visible');
 
     // Sauvegarder pour export
     exportDataMeteo = { joined, varLabel: VAR_LABELS_AC[variable] || variable, varKey: variable, lieu: acLieuNom };
@@ -1519,6 +1600,7 @@ async function initSCSelects() {
 async function lancerAnalyseSecteurs() {
   hideSCError();
   document.getElementById('sc-stats').classList.remove('visible');
+  document.getElementById('sc-r2-legend').classList.remove('visible');
   document.getElementById('sc-charts').style.display = 'none';
 
   const region  = document.getElementById('sc-region').value;
@@ -1604,6 +1686,7 @@ async function lancerAnalyseSecteurs() {
     document.getElementById('sc-conso-total').textContent = totalGwh.toLocaleString('fr-CA', {maximumFractionDigits:1});
     document.getElementById('sc-mw-moy').textContent   = Math.round(moyMw).toLocaleString('fr-CA');
     document.getElementById('sc-stats').classList.add('visible');
+    document.getElementById('sc-r2-legend').classList.add('visible');
 
     const periodeLabel = joined[0].key + ' → ' + joined[joined.length-1].key;
     const filtreLabel  = [region||'Toutes régions', secteur||'Tous secteurs'].join(' · ');
