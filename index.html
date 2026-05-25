@@ -476,6 +476,36 @@ footer .footer-credits {
 }
 .chart-wrap { position: relative; }
 
+/* ── Barre d'export sous chaque graphique ── */
+.chart-export-bar {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--creme);
+}
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 5px 13px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-family: var(--font);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1.5px solid var(--creme);
+  background: var(--creme-light);
+  color: var(--noir);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.btn-export:hover { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+.btn-export.csv   { border-color: #c8dfc1; background: #eef6eb; color: #3a6020; }
+.btn-export.csv:hover { background: #d6edcf; border-color: #5a9040; }
+
+
 /* Intro analyse */
 .analyse-intro {
   background: var(--teal-light);
@@ -740,6 +770,10 @@ footer .footer-credits {
       <div class="chart-wrap" style="height:400px;">
         <canvas id="chart-temporal"></canvas>
       </div>
+      <div class="chart-export-bar">
+        <button class="btn-export" onclick="exportPNG('chart-temporal','meteo-demande-temporel')">⬇ PNG</button>
+        <button class="btn-export csv" onclick="exportCSV_meteoTemporal()">⬇ CSV</button>
+      </div>
     </div>
 
     <!-- Graphique 2 : Nuage de points -->
@@ -748,6 +782,10 @@ footer .footer-credits {
       <p id="chart2-desc">Chaque point représente une journée. La droite de régression linéaire indique la tendance générale.</p>
       <div class="chart-wrap" style="height:380px;">
         <canvas id="chart-scatter"></canvas>
+      </div>
+      <div class="chart-export-bar">
+        <button class="btn-export" onclick="exportPNG('chart-scatter','meteo-demande-nuage')">⬇ PNG</button>
+        <button class="btn-export csv" onclick="exportCSV_meteoScatter()">⬇ CSV</button>
       </div>
     </div>
 
@@ -835,6 +873,10 @@ footer .footer-credits {
       <div class="chart-wrap" style="height:400px;">
         <canvas id="sc-chart-temporal"></canvas>
       </div>
+      <div class="chart-export-bar">
+        <button class="btn-export" onclick="exportPNG('sc-chart-temporal','conso-demande-temporel')">⬇ PNG</button>
+        <button class="btn-export csv" onclick="exportCSV_scTemporal()">⬇ CSV</button>
+      </div>
     </div>
 
     <!-- Graphique 2 : Nuage de points -->
@@ -844,6 +886,10 @@ footer .footer-credits {
       <div class="chart-wrap" style="height:360px;">
         <canvas id="sc-chart-scatter"></canvas>
       </div>
+      <div class="chart-export-bar">
+        <button class="btn-export" onclick="exportPNG('sc-chart-scatter','conso-demande-nuage')">⬇ PNG</button>
+        <button class="btn-export csv" onclick="exportCSV_scScatter()">⬇ CSV</button>
+      </div>
     </div>
 
     <!-- Graphique 3 : Part de chaque secteur -->
@@ -852,6 +898,10 @@ footer .footer-credits {
       <p>Consommation cumulée (GWh) sur la période sélectionnée, par secteur d'activité.</p>
       <div class="chart-wrap" style="height:320px;">
         <canvas id="sc-chart-secteurs"></canvas>
+      </div>
+      <div class="chart-export-bar">
+        <button class="btn-export" onclick="exportPNG('sc-chart-secteurs','conso-par-secteur')">⬇ PNG</button>
+        <button class="btn-export csv" onclick="exportCSV_scSecteurs()">⬇ CSV</button>
       </div>
     </div>
 
@@ -919,6 +969,7 @@ let acDateDebut = '2019-01-01';
 let acDateFin   = '2024-12-31';
 let acLat = 48.4333, acLon = -71.0667, acLieuNom = 'Saguenay (Jonquière)';
 let chartTemporal = null, chartScatter = null;
+let exportDataMeteo = null; // { joined, varLabel, varKey }
 let demandeCache = null; // cache des données de demande
 
 function onACLieuChange(val) {
@@ -1088,6 +1139,9 @@ async function lancerAnalyse() {
     document.getElementById('as-mw-max').textContent = Math.round(mwMax).toLocaleString('fr-CA');
     document.getElementById('as-lieu').textContent   = acLieuNom;
     document.getElementById('analyse-stats').classList.add('visible');
+
+    // Sauvegarder pour export
+    exportDataMeteo = { joined, varLabel: VAR_LABELS_AC[variable] || variable, varKey: variable, lieu: acLieuNom };
 
     // Mettre à jour descriptions
     const varLabel = VAR_LABELS_AC[variable] || variable;
@@ -1293,7 +1347,103 @@ async function lancerAnalyse() {
   }
 }
 
-// Initialiser le lieu par défaut
+/* ══════════════════════════════════════════════════════
+   FONCTIONS D'EXPORT COMMUN
+══════════════════════════════════════════════════════ */
+
+/* ── Utilitaire : télécharger un fichier ── */
+function _download(url, filename) {
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+}
+
+/* ── Utilitaire : construire et télécharger un CSV ── */
+function _downloadCSV(rows, filename) {
+  const csv = '\uFEFF' + rows.map(r => r.map(c => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  _download(URL.createObjectURL(blob), filename + '.csv');
+}
+
+/* ── Export PNG : capture le canvas Chart.js ── */
+function exportPNG(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  // Fond blanc pour éviter le fond transparent
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = canvas.width;
+  offscreen.height = canvas.height;
+  const ctx = offscreen.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+  ctx.drawImage(canvas, 0, 0);
+  offscreen.toBlob(blob => _download(URL.createObjectURL(blob), filename + '.png'), 'image/png');
+}
+
+/* ── MÉTÉO × DEMANDE : temporel ── */
+function exportCSV_meteoTemporal() {
+  if (!exportDataMeteo) return;
+  const { joined, varLabel, lieu } = exportDataMeteo;
+  const rows = [['Date', varLabel, 'Demande moyenne (MW)', 'Lieu météo']];
+  joined.forEach(d => rows.push([d.date, d.meteo !== null ? d.meteo.toFixed(2) : '', Math.round(d.mw), lieu]));
+  _downloadCSV(rows, 'meteo-demande-temporel');
+}
+
+/* ── MÉTÉO × DEMANDE : nuage de points ── */
+function exportCSV_meteoScatter() {
+  if (!exportDataMeteo) return;
+  const { joined, varLabel, lieu } = exportDataMeteo;
+  const rows = [['Date', varLabel, 'Demande moyenne (MW)', 'Lieu météo']];
+  joined.forEach(d => rows.push([d.date, d.meteo !== null ? d.meteo.toFixed(2) : '', Math.round(d.mw), lieu]));
+  _downloadCSV(rows, 'meteo-demande-nuage');
+}
+
+/* ── CONSOMMATION × DEMANDE : temporel ── */
+function exportCSV_scTemporal() {
+  if (!exportDataSC) return;
+  const { joined, region, secteur, gran } = exportDataSC;
+  const periodeLabel = gran === 'year' ? 'Année' : 'Mois';
+  const rows = [[periodeLabel, 'Consommation (GWh)', 'Demande moyenne (MW)', 'Région', 'Secteur']];
+  joined.forEach(d => rows.push([
+    d.key,
+    d.gwh.toLocaleString('fr-CA', { maximumFractionDigits: 3 }),
+    Math.round(d.mw).toLocaleString('fr-CA'),
+    region || 'Toutes',
+    secteur || 'Tous'
+  ]));
+  _downloadCSV(rows, 'conso-demande-temporel');
+}
+
+/* ── CONSOMMATION × DEMANDE : nuage de points ── */
+function exportCSV_scScatter() {
+  if (!exportDataSC) return;
+  const { joined, region, secteur, gran } = exportDataSC;
+  const periodeLabel = gran === 'year' ? 'Année' : 'Mois';
+  const rows = [[periodeLabel, 'Consommation (GWh)', 'Demande moyenne (MW)', 'Région', 'Secteur']];
+  joined.forEach(d => rows.push([
+    d.key,
+    d.gwh.toLocaleString('fr-CA', { maximumFractionDigits: 3 }),
+    Math.round(d.mw).toLocaleString('fr-CA'),
+    region || 'Toutes',
+    secteur || 'Tous'
+  ]));
+  _downloadCSV(rows, 'conso-demande-nuage');
+}
+
+/* ── CONSOMMATION × DEMANDE : répartition par secteur ── */
+function exportCSV_scSecteurs() {
+  if (!exportDataSC) return;
+  const { bySecteur, region } = exportDataSC;
+  const rows = [['Secteur', 'Consommation (GWh)', 'Région']];
+  Object.keys(bySecteur).sort().forEach(s => rows.push([
+    s,
+    bySecteur[s].toLocaleString('fr-CA', { maximumFractionDigits: 3 }),
+    region || 'Toutes'
+  ]));
+  _downloadCSV(rows, 'conso-par-secteur');
+}
+
 document.getElementById('ac-lieu').value = '48.4333,-71.0667';
 
 /* ══════════════════════════════════════════════════════
@@ -1306,6 +1456,7 @@ let scConsoCache  = null;
 let scDemandeCache = null;
 let scSelectsReady = false;
 let scChartTemporal = null, scChartScatter = null, scChartSecteurs = null;
+let exportDataSC = null; // { joined, bySecteur, region, secteur, gran }
 
 const SECTEUR_COLORS_SC = {
   'INDUSTRIEL':     '#62878b',
@@ -1551,6 +1702,9 @@ async function lancerAnalyseSecteurs() {
     });
 
     document.getElementById('sc-charts').style.display = 'flex';
+
+    // Sauvegarder pour export
+    exportDataSC = { joined, bySecteur, region, secteur, gran };
 
   } catch (err) {
     showSCError(err.message);
