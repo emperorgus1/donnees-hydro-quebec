@@ -6,6 +6,7 @@
 <title>Portail de données — OTERAUD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -286,6 +287,194 @@ footer .footer-credits {
 .header-logo-block { display: flex; align-items: center; gap: 0.85rem; }
 .header-logo { height: 32px; width: auto; display: block; flex-shrink: 0; }
 .header-logo-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); flex-shrink: 0; }
+
+/* ── Navigation onglets ── */
+.portal-nav {
+  background: var(--noir);
+  display: flex;
+  padding: 0 2rem;
+  border-bottom: 3px solid var(--ocre);
+  gap: 0;
+}
+.portal-tab {
+  padding: 11px 22px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -3px;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  user-select: none;
+}
+.portal-tab:hover { color: rgba(255,255,255,0.85); }
+.portal-tab.active { color: var(--ocre); border-bottom-color: var(--ocre); }
+
+/* ── Pages ── */
+.portal-page { display: none; }
+.portal-page.active { display: block; }
+
+/* ══════════════════════════════════════
+   ANALYSE CROISÉE
+══════════════════════════════════════ */
+.analyse-wrap {
+  padding: 2rem;
+  max-width: 1060px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Panneau de contrôles */
+.analyse-controls {
+  background: #fff;
+  border: 1.5px solid var(--creme);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+.ctrl-group label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--teal);
+}
+.ctrl-group select, .ctrl-group input {
+  border: 1.5px solid var(--creme);
+  background: var(--creme-light);
+  color: var(--noir);
+  border-radius: 6px;
+  padding: 7px 11px;
+  font-size: 0.82rem;
+  font-family: var(--font);
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.ctrl-group select:focus, .ctrl-group input:focus {
+  border-color: var(--teal); background: #fff;
+}
+.btn-analyser {
+  padding: 9px 24px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-family: var(--font);
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: var(--teal);
+  color: #fff;
+  letter-spacing: 0.04em;
+  transition: background 0.15s, transform 0.1s;
+  align-self: flex-end;
+  white-space: nowrap;
+}
+.btn-analyser:hover { background: #4e6e71; transform: translateY(-1px); }
+.btn-analyser:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* Loader analyse */
+.analyse-loader {
+  display: none;
+  background: var(--ocre-light);
+  border: 1.5px solid #f0d9a0;
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--terre);
+}
+.analyse-loader.visible { display: flex; }
+.analyse-loader-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--creme);
+  border-top-color: var(--terre);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Erreur analyse */
+.analyse-error {
+  display: none;
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #b91c1c;
+  margin-bottom: 1.5rem;
+}
+.analyse-error.visible { display: block; }
+
+/* Barre de stats */
+.analyse-stats {
+  display: none;
+  background: var(--ocre-light);
+  border: 1.5px solid #f0d9a0;
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+.analyse-stats.visible { display: flex; }
+.a-stat { display: flex; flex-direction: column; gap: 2px; }
+.a-stat-val { font-size: 1.05rem; font-weight: 700; color: var(--terre); letter-spacing: -0.02em; }
+.a-stat-lbl { font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #9a7040; }
+.a-stat-divider { width: 1px; height: 30px; background: #e8c97a; }
+
+/* Cartes graphiques */
+.analyse-charts { display: flex; flex-direction: column; gap: 1.5rem; }
+.chart-card {
+  background: #fff;
+  border: 1.5px solid var(--creme);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.chart-card h3 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 0.3rem;
+}
+.chart-card p {
+  font-size: 0.76rem;
+  color: #888;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.chart-wrap { position: relative; }
+
+/* Intro analyse */
+.analyse-intro {
+  background: var(--teal-light);
+  border: 1.5px solid #b0d0d3;
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  font-size: 0.82rem;
+  color: #2e5558;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.analyse-intro .intro-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
 </style>
 </head>
 <body>
@@ -311,9 +500,17 @@ footer .footer-credits {
   </div>
 </header>
 
+<!-- ══ NAVIGATION PORTAIL ══ -->
+<nav class="portal-nav">
+  <div class="portal-tab active" onclick="showPortalPage('applications')">Applications</div>
+  <div class="portal-tab" onclick="showPortalPage('analyse')">Analyse croisée</div>
+</nav>
+
 <main>
 
-  
+<!-- ══════════ PAGE : APPLICATIONS ══════════ -->
+<div class="portal-page active" id="portal-applications">
+  <div style="max-width:1060px; margin:0 auto; padding:2rem;">
 
   <div class="section-header">
     <h2>Applications disponibles</h2>
@@ -372,10 +569,157 @@ footer .footer-credits {
 
   </div>
 
-<div class="info-box">
+  <div class="info-box">
     <span class="info-icon">ℹ</span>
     <span>Ce portail regroupe les applications de données développées par l'OTERAUD à partir des jeux de données ouverts d'Hydro-Québec. Chaque application est un fichier HTML autonome — cliquez sur une carte pour l'ouvrir directement dans votre navigateur. De nouvelles applications seront ajoutées au fil du temps.</span>
   </div>
+
+  </div>
+</div><!-- /portal-applications -->
+
+
+<!-- ══════════ PAGE : ANALYSE CROISÉE ══════════ -->
+<div class="portal-page" id="portal-analyse">
+<div class="analyse-wrap">
+
+  <div class="analyse-intro">
+    <span class="intro-icon">🔗</span>
+    <span>Cette analyse croise les <strong>données météorologiques</strong> (Open-Meteo / ERA5) avec la <strong>demande d'électricité horaire</strong> (Hydro-Québec, 2019–2024). La demande horaire est agrégée en <strong>moyenne journalière</strong> (MW) pour être mise en relation avec la température quotidienne. Choisissez une ville, une période et lancez l'analyse.</span>
+  </div>
+
+  <!-- Contrôles -->
+  <div class="analyse-controls">
+
+    <div class="ctrl-group">
+      <label>Ville / Région météo</label>
+      <select id="ac-lieu" onchange="onACLieuChange(this.value)" style="min-width:210px;">
+        <optgroup label="Saguenay–Lac-Saint-Jean">
+          <option value="48.4333,-71.0667">Saguenay (Jonquière)</option>
+          <option value="48.3167,-70.9833">Saguenay (Chicoutimi)</option>
+          <option value="48.5200,-72.2667">Roberval</option>
+          <option value="48.8333,-72.5333">Normandin</option>
+          <option value="49.7833,-74.5667">Chibougamau</option>
+        </optgroup>
+        <optgroup label="Capitale-Nationale">
+          <option value="46.8139,-71.2081">Québec</option>
+          <option value="47.0667,-70.7667">Cap Tourmente</option>
+        </optgroup>
+        <optgroup label="Côte-Nord">
+          <option value="49.1333,-68.2000">Baie-Comeau</option>
+          <option value="50.2167,-66.2667">Sept-Îles</option>
+        </optgroup>
+        <optgroup label="Montréal">
+          <option value="45.5017,-73.5673">Montréal</option>
+          <option value="45.4700,-73.7490">Montréal (Dorval)</option>
+        </optgroup>
+        <optgroup label="Estrie">
+          <option value="45.4380,-71.6870">Sherbrooke</option>
+        </optgroup>
+        <optgroup label="Abitibi-Témiscamingue">
+          <option value="48.2670,-79.0170">Rouyn-Noranda</option>
+          <option value="48.0530,-77.7830">Val-d'Or</option>
+        </optgroup>
+        <optgroup label="Gaspésie">
+          <option value="48.7750,-64.4790">Gaspé</option>
+        </optgroup>
+        <optgroup label="Bas-Saint-Laurent">
+          <option value="47.8000,-69.5330">Rivière-du-Loup</option>
+        </optgroup>
+        <optgroup label="Outaouais">
+          <option value="45.3220,-75.6690">Ottawa-Gatineau</option>
+        </optgroup>
+        <optgroup label="Nord-du-Québec">
+          <option value="55.2830,-77.7670">Kuujjuarapik</option>
+          <option value="53.6330,-77.7000">La Grande Rivière</option>
+        </optgroup>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Période</label>
+      <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+        <button class="btn-period-ac active" onclick="setACPeriod('2019-01-01','2024-12-31',this)">2019–2024</button>
+        <button class="btn-period-ac" onclick="setACPeriod('2022-01-01','2024-12-31',this)">2022–2024</button>
+        <button class="btn-period-ac" onclick="setACPeriod('2019-01-01','2021-12-31',this)">2019–2021</button>
+      </div>
+    </div>
+
+    <div class="ctrl-group">
+      <label>Variable météo</label>
+      <select id="ac-variable">
+        <option value="temperature_2m_mean">Température moyenne (°C)</option>
+        <option value="temperature_2m_max">Température maximale (°C)</option>
+        <option value="temperature_2m_min">Température minimale (°C)</option>
+        <option value="wind_speed_10m_max">Vitesse du vent max (km/h)</option>
+        <option value="relative_humidity_2m_mean">Humidité relative (%)</option>
+      </select>
+    </div>
+
+    <button class="btn-analyser" id="btn-analyser" onclick="lancerAnalyse()">⬇ Lancer l'analyse</button>
+  </div>
+
+  <!-- Loader -->
+  <div class="analyse-loader" id="analyse-loader">
+    <div class="analyse-loader-spinner"></div>
+    <span id="analyse-loader-msg">Chargement…</span>
+  </div>
+
+  <!-- Erreur -->
+  <div class="analyse-error" id="analyse-error"></div>
+
+  <!-- Stats -->
+  <div class="analyse-stats" id="analyse-stats">
+    <div class="a-stat">
+      <div class="a-stat-val" id="as-jours">—</div>
+      <div class="a-stat-lbl">Jours analysés</div>
+    </div>
+    <div class="a-stat-divider"></div>
+    <div class="a-stat">
+      <div class="a-stat-val" id="as-r2">—</div>
+      <div class="a-stat-lbl">Corrélation R²</div>
+    </div>
+    <div class="a-stat-divider"></div>
+    <div class="a-stat">
+      <div class="a-stat-val" id="as-mw-min">—</div>
+      <div class="a-stat-lbl">Demande min. (MW)</div>
+    </div>
+    <div class="a-stat-divider"></div>
+    <div class="a-stat">
+      <div class="a-stat-val" id="as-mw-max">—</div>
+      <div class="a-stat-lbl">Demande max. (MW)</div>
+    </div>
+    <div class="a-stat-divider"></div>
+    <div class="a-stat">
+      <div class="a-stat-val" id="as-lieu">—</div>
+      <div class="a-stat-lbl">Station météo</div>
+    </div>
+  </div>
+
+  <!-- Graphiques -->
+  <div class="analyse-charts" id="analyse-charts" style="display:none;">
+
+    <!-- Graphique 1 : Double axe Y temporel -->
+    <div class="chart-card">
+      <h3>Température & demande d'électricité — évolution temporelle</h3>
+      <p id="chart1-desc">Température quotidienne (axe gauche) et demande moyenne journalière en MW (axe droit) sur la même période.</p>
+      <div class="chart-wrap" style="height:400px;">
+        <canvas id="chart-temporal"></canvas>
+      </div>
+    </div>
+
+    <!-- Graphique 2 : Nuage de points -->
+    <div class="chart-card">
+      <h3>Nuage de points — variable météo vs demande (MW)</h3>
+      <p id="chart2-desc">Chaque point représente une journée. La droite de régression linéaire indique la tendance générale.</p>
+      <div class="chart-wrap" style="height:380px;">
+        <canvas id="chart-scatter"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div><!-- /portal-analyse -->
 
 </main>
 
@@ -383,6 +727,405 @@ footer .footer-credits {
   <p class="footer-source">Source des données : <a href="https://donnees.hydroquebec.com/pages/accueil/" target="_blank">Hydro-Québec — Données ouvertes</a></p>
   <p class="footer-credits">OTERAUD &nbsp;·&nbsp; 2026 &nbsp;·&nbsp; Codage assisté par Claude (Anthropic)</p>
 </footer>
+
+<style>
+.btn-period-ac {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-family: var(--font);
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid var(--creme);
+  background: var(--creme-light);
+  color: var(--noir);
+  letter-spacing: 0.04em;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.btn-period-ac:hover, .btn-period-ac.active {
+  background: var(--teal-light);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+</style>
+
+<script>
+/* ══ NAVIGATION PORTAIL ══ */
+function showPortalPage(name) {
+  document.querySelectorAll('.portal-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('portal-' + name).classList.add('active');
+  const tabs = document.querySelectorAll('.portal-tab');
+  const idx = name === 'applications' ? 0 : 1;
+  if (tabs[idx]) tabs[idx].classList.add('active');
+}
+
+/* ══ ANALYSE CROISÉE ══ */
+const API_METEO_BASE   = 'https://archive-api.open-meteo.com/v1/archive';
+const API_DEMANDE      = '/api/demande-electricite';
+const VARIABLES_DAILY  = 'temperature_2m_mean,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,relative_humidity_2m_mean';
+
+const VAR_LABELS_AC = {
+  temperature_2m_mean:         'Température moyenne (°C)',
+  temperature_2m_max:          'Température maximale (°C)',
+  temperature_2m_min:          'Température minimale (°C)',
+  wind_speed_10m_max:          'Vitesse du vent max (km/h)',
+  relative_humidity_2m_mean:   'Humidité relative (%)',
+};
+
+let acDateDebut = '2019-01-01';
+let acDateFin   = '2024-12-31';
+let acLat = 48.4333, acLon = -71.0667, acLieuNom = 'Saguenay (Jonquière)';
+let chartTemporal = null, chartScatter = null;
+let demandeCache = null; // cache des données de demande
+
+function onACLieuChange(val) {
+  if (!val) return;
+  const [lat, lon] = val.split(',').map(Number);
+  acLat = lat; acLon = lon;
+  const sel = document.getElementById('ac-lieu');
+  acLieuNom = sel.options[sel.selectedIndex].text;
+}
+
+function setACPeriod(debut, fin, btn) {
+  document.querySelectorAll('.btn-period-ac').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  acDateDebut = debut;
+  acDateFin   = fin;
+}
+
+function showAnalyseLoader(msg) {
+  document.getElementById('analyse-loader-msg').textContent = msg;
+  document.getElementById('analyse-loader').classList.add('visible');
+}
+function hideAnalyseLoader() {
+  document.getElementById('analyse-loader').classList.remove('visible');
+}
+function showAnalyseError(msg) {
+  const el = document.getElementById('analyse-error');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+}
+function hideAnalyseError() {
+  document.getElementById('analyse-error').classList.remove('visible');
+}
+
+/* ── Calcul corrélation de Pearson ── */
+function pearsonR(xs, ys) {
+  const n = xs.length;
+  if (n < 2) return 0;
+  const mx = xs.reduce((a,b)=>a+b,0)/n;
+  const my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, dx2=0, dy2=0;
+  for (let i=0;i<n;i++) {
+    const dx=xs[i]-mx, dy=ys[i]-my;
+    num+=dx*dy; dx2+=dx*dx; dy2+=dy*dy;
+  }
+  return (dx2*dy2 > 0) ? num/Math.sqrt(dx2*dy2) : 0;
+}
+
+/* ── Régression linéaire ── */
+function linearRegression(xs, ys) {
+  const n = xs.length;
+  const mx = xs.reduce((a,b)=>a+b,0)/n;
+  const my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for (let i=0;i<n;i++) { num+=(xs[i]-mx)*(ys[i]-my); den+=(xs[i]-mx)**2; }
+  const slope = den ? num/den : 0;
+  const intercept = my - slope*mx;
+  return { slope, intercept };
+}
+
+async function lancerAnalyse() {
+  hideAnalyseError();
+  document.getElementById('analyse-stats').classList.remove('visible');
+  document.getElementById('analyse-charts').style.display = 'none';
+
+  const variable = document.getElementById('ac-variable').value;
+  const btn = document.getElementById('btn-analyser');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analyse en cours…';
+
+  try {
+    // ── 1. Charger météo (Open-Meteo, direct, pas de CORS) ──
+    showAnalyseLoader('Chargement des données météo (' + acLieuNom + ')…');
+    const meteoUrl = API_METEO_BASE
+      + '?latitude='   + acLat
+      + '&longitude='  + acLon
+      + '&start_date=' + acDateDebut
+      + '&end_date='   + acDateFin
+      + '&daily='      + VARIABLES_DAILY
+      + '&timezone=America%2FToronto';
+
+    const resMeteo = await fetch(meteoUrl);
+    if (!resMeteo.ok) throw new Error('Erreur API météo (' + resMeteo.status + ')');
+    const dataMeteo = await resMeteo.json();
+    if (dataMeteo.error) throw new Error(dataMeteo.reason || 'Erreur Open-Meteo');
+
+    // Construire map date → variables météo
+    const dates = dataMeteo.daily.time || [];
+    const meteoMap = {};
+    dates.forEach((date, i) => {
+      const row = {};
+      Object.keys(dataMeteo.daily).filter(k=>k!=='time').forEach(k => row[k] = dataMeteo.daily[k][i]);
+      meteoMap[date] = row;
+    });
+
+    // ── 2. Charger demande électricité (via Netlify function) ──
+    showAnalyseLoader('Chargement des données de demande Hydro-Québec…');
+    if (!demandeCache) {
+      const resDemande = await fetch(API_DEMANDE);
+      if (!resDemande.ok) throw new Error('Erreur API demande électricité (' + resDemande.status + ') — assurez-vous d\'ouvrir ce portail via Netlify.');
+      demandeCache = await resDemande.json();
+    }
+
+    // ── 3. Agréger demande par jour ──
+    showAnalyseLoader('Croisement des données…');
+    const demandeParJour = {};
+    demandeCache.forEach(d => {
+      // d.date = "2019-01-01T00:00:00" ou "2019-01-01 00:00"
+      const jour = d.date.substring(0, 10);
+      if (!demandeParJour[jour]) demandeParJour[jour] = { sum: 0, count: 0 };
+      demandeParJour[jour].sum += d.mw;
+      demandeParJour[jour].count++;
+    });
+
+    // ── 4. Joindre les deux jeux sur la date ──
+    const joined = [];
+    Object.keys(demandeParJour).sort().forEach(jour => {
+      if (!meteoMap[jour]) return;
+      const varVal = meteoMap[jour][variable];
+      if (varVal === null || varVal === undefined || isNaN(varVal)) return;
+      const mwMoy = demandeParJour[jour].sum / demandeParJour[jour].count;
+      joined.push({ date: jour, meteo: varVal, mw: mwMoy });
+    });
+
+    if (joined.length < 10) throw new Error('Pas assez de données communes (' + joined.length + ' jours). Vérifiez la période sélectionnée.');
+
+    // ── 5. Calculs statistiques ──
+    const xs = joined.map(d => d.meteo);
+    const ys = joined.map(d => d.mw);
+    const r  = pearsonR(xs, ys);
+    const r2 = r * r;
+    const mwMin = Math.min(...ys);
+    const mwMax = Math.max(...ys);
+    const reg  = linearRegression(xs, ys);
+
+    // Afficher stats
+    document.getElementById('as-jours').textContent  = joined.length.toLocaleString('fr-CA');
+    document.getElementById('as-r2').textContent     = r2.toFixed(3) + (r2 > 0.5 ? ' 🔴' : r2 > 0.25 ? ' 🟡' : ' 🟢');
+    document.getElementById('as-mw-min').textContent = Math.round(mwMin).toLocaleString('fr-CA');
+    document.getElementById('as-mw-max').textContent = Math.round(mwMax).toLocaleString('fr-CA');
+    document.getElementById('as-lieu').textContent   = acLieuNom;
+    document.getElementById('analyse-stats').classList.add('visible');
+
+    // Mettre à jour descriptions
+    const varLabel = VAR_LABELS_AC[variable] || variable;
+    document.getElementById('chart1-desc').textContent =
+      varLabel + ' (axe gauche, ' + (variable.includes('temp') ? '°C' : variable.includes('wind') ? 'km/h' : '%') + ') et demande moyenne journalière en MW (axe droit) — ' + acLieuNom + ', ' + acDateDebut.substring(0,4) + '–' + acDateFin.substring(0,4) + '.';
+    document.getElementById('chart2-desc').textContent =
+      'Chaque point représente une journée. R² = ' + r2.toFixed(3) + ' · ' + (r2 > 0.5 ? 'Forte corrélation' : r2 > 0.25 ? 'Corrélation modérée' : 'Faible corrélation') + '. Pente : ' + reg.slope.toFixed(1) + ' MW par unité de ' + varLabel + '.';
+
+    // ── 6. Graphique 1 — Double axe Y temporel ──
+    const temporalLabels = joined.map(d => d.date);
+    const meteoVals      = joined.map(d => d.meteo);
+    const mwVals         = joined.map(d => d.mw);
+
+    // Sous-échantillonnage si > 800 points pour la lisibilité
+    let displayJoined = joined;
+    if (joined.length > 800) {
+      const step = Math.ceil(joined.length / 800);
+      displayJoined = joined.filter((_, i) => i % step === 0);
+    }
+    const dLabels  = displayJoined.map(d => d.date);
+    const dMeteo   = displayJoined.map(d => d.meteo);
+    const dMW      = displayJoined.map(d => d.mw);
+
+    const meteoColor = variable.includes('temp') ? '#62878b' : variable.includes('wind') ? '#a45a37' : '#f59e19';
+
+    if (chartTemporal) chartTemporal.destroy();
+    chartTemporal = new Chart(document.getElementById('chart-temporal'), {
+      type: 'line',
+      data: {
+        labels: dLabels,
+        datasets: [
+          {
+            label: varLabel,
+            data: dMeteo,
+            borderColor: meteoColor,
+            backgroundColor: meteoColor + '22',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: true,
+            tension: 0.3,
+            yAxisID: 'y-meteo',
+          },
+          {
+            label: 'Demande (MW)',
+            data: dMW,
+            borderColor: '#f59e19',
+            backgroundColor: '#f59e1922',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.3,
+            yAxisID: 'y-mw',
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, labels: { font: { family: 'Montserrat', size: 11 }, boxWidth: 14 } },
+          tooltip: {
+            callbacks: {
+              title: ctx => ctx[0].label,
+              label: ctx => {
+                if (ctx.datasetIndex === 0) return ' ' + varLabel + ' : ' + ctx.parsed.y.toFixed(1);
+                return ' Demande : ' + Math.round(ctx.parsed.y).toLocaleString('fr-CA') + ' MW';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { maxTicksLimit: 24, maxRotation: 45, font: { size: 10 } },
+            grid: { color: '#ede8df' }
+          },
+          'y-meteo': {
+            type: 'linear',
+            position: 'left',
+            title: { display: true, text: varLabel, font: { size: 10, family: 'Montserrat' }, color: meteoColor },
+            grid: { color: '#ede8df' },
+            ticks: { font: { size: 10 }, color: meteoColor }
+          },
+          'y-mw': {
+            type: 'linear',
+            position: 'right',
+            title: { display: true, text: 'Demande (MW)', font: { size: 10, family: 'Montserrat' }, color: '#c17b0e' },
+            grid: { display: false },
+            ticks: {
+              font: { size: 10 }, color: '#c17b0e',
+              callback: v => v.toLocaleString('fr-CA')
+            }
+          }
+        }
+      }
+    });
+
+    // ── 7. Graphique 2 — Nuage de points + régression ──
+    // Générer droite de régression
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    const regLine = [
+      { x: xMin, y: reg.slope * xMin + reg.intercept },
+      { x: xMax, y: reg.slope * xMax + reg.intercept }
+    ];
+
+    // Couleur selon saison approximative (mois)
+    const scatterData = joined.map(d => {
+      const mois = parseInt(d.date.substring(5,7));
+      const isWinter = mois <= 3 || mois >= 11;
+      const isSummer = mois >= 6 && mois <= 8;
+      return {
+        x: d.meteo,
+        y: d.mw,
+        color: isWinter ? '#62878b' : isSummer ? '#f59e19' : '#c4987c'
+      };
+    });
+
+    if (chartScatter) chartScatter.destroy();
+    chartScatter = new Chart(document.getElementById('chart-scatter'), {
+      data: {
+        datasets: [
+          {
+            type: 'scatter',
+            label: 'Hiver (nov–mars)',
+            data: scatterData.filter(d => {
+              const mois = parseInt(joined[scatterData.indexOf(d)]?.date?.substring(5,7));
+              return mois <= 3 || mois >= 11;
+            }),
+            backgroundColor: '#62878b88',
+            pointRadius: 3,
+            pointHoverRadius: 5,
+          },
+          {
+            type: 'scatter',
+            label: 'Été (juin–août)',
+            data: scatterData.filter(d => {
+              const mois = parseInt(joined[scatterData.indexOf(d)]?.date?.substring(5,7));
+              return mois >= 6 && mois <= 8;
+            }),
+            backgroundColor: '#f59e1988',
+            pointRadius: 3,
+            pointHoverRadius: 5,
+          },
+          {
+            type: 'scatter',
+            label: 'Intersaisons',
+            data: scatterData.filter(d => {
+              const mois = parseInt(joined[scatterData.indexOf(d)]?.date?.substring(5,7));
+              return mois >= 4 && mois <= 5 || mois >= 9 && mois <= 10;
+            }),
+            backgroundColor: '#c4987c88',
+            pointRadius: 3,
+            pointHoverRadius: 5,
+          },
+          {
+            type: 'line',
+            label: 'Régression linéaire',
+            data: regLine,
+            borderColor: '#a45a37',
+            borderWidth: 2,
+            borderDash: [6, 3],
+            pointRadius: 0,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { font: { family: 'Montserrat', size: 11 }, boxWidth: 14 } },
+          tooltip: {
+            filter: item => item.datasetIndex < 3,
+            callbacks: {
+              label: ctx => ' ' + varLabel + ' : ' + ctx.parsed.x.toFixed(1) + '  |  Demande : ' + Math.round(ctx.parsed.y).toLocaleString('fr-CA') + ' MW'
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: varLabel, font: { size: 11, family: 'Montserrat' } },
+            grid: { color: '#ede8df' },
+            ticks: { font: { size: 10 } }
+          },
+          y: {
+            title: { display: true, text: 'Demande moyenne (MW)', font: { size: 11, family: 'Montserrat' } },
+            grid: { color: '#ede8df' },
+            ticks: { font: { size: 10 }, callback: v => v.toLocaleString('fr-CA') }
+          }
+        }
+      }
+    });
+
+    document.getElementById('analyse-charts').style.display = 'flex';
+
+  } catch (err) {
+    showAnalyseError(err.message);
+    console.error(err);
+  } finally {
+    hideAnalyseLoader();
+    btn.disabled = false;
+    btn.textContent = '⬇ Lancer l\'analyse';
+  }
+}
+
+// Initialiser le lieu par défaut
+document.getElementById('ac-lieu').value = '48.4333,-71.0667';
+</script>
 
 </body>
 </html>
