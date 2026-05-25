@@ -71,22 +71,6 @@ header p {
   max-width: 560px;
   line-height: 1.6;
 }
-.header-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-.header-meta .badge {
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 999px;
-  padding: 5px 14px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
 
 /* ── Contenu principal ── */
 main {
@@ -296,7 +280,6 @@ footer .footer-credits {
 @media (max-width: 640px) {
   header, main, .oteraud-bar { padding-left: 1rem; padding-right: 1rem; }
   header { padding-top: 1.25rem; padding-bottom: 1.25rem; }
-  .header-meta { align-items: flex-start; }
   header h1 { font-size: 1.1rem; }
 }
 
@@ -305,34 +288,8 @@ footer .footer-credits {
 .header-logo { height: 32px; width: auto; display: block; flex-shrink: 0; }
 .header-logo-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.35); flex-shrink: 0; }
 
-/* ── Navigation onglets ── */
-.portal-nav {
-  background: var(--noir);
-  display: flex;
-  padding: 0 2rem;
-  border-bottom: 3px solid var(--ocre);
-  gap: 0;
-}
-.portal-tab {
-  padding: 11px 22px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -3px;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-  user-select: none;
-}
-.portal-tab:hover { color: rgba(255,255,255,0.85); }
-.portal-tab.active { color: var(--ocre); border-bottom-color: var(--ocre); }
-
 /* ── Pages ── */
-.portal-page { display: none; }
-.portal-page.active { display: block; }
+.portal-page { display: block; }
 
 /* ══════════════════════════════════════
    ANALYSE CROISÉE
@@ -555,6 +512,48 @@ footer .footer-credits {
 
 /* Intro analyse */
 .analyse-intro {
+
+/* ── En-tête panneau analyse ── */
+.analyse-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 2px solid var(--creme);
+}
+.analyse-panel-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--noir);
+  margin: 0 0 2px 0;
+}
+.analyse-panel-sub {
+  font-size: 0.72rem;
+  color: #888;
+  font-weight: 500;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.btn-retour {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: var(--font);
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid var(--creme);
+  background: var(--creme-light);
+  color: var(--noir);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.btn-retour:hover { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+
+/* Intro analyse */
+.analyse-intro {
   background: var(--teal-light);
   border: 1.5px solid #b0d0d3;
   border-radius: 10px;
@@ -590,17 +589,10 @@ footer .footer-credits {
   </div>
 </header>
 
-<!-- ══ NAVIGATION PORTAIL ══ -->
-<nav class="portal-nav">
-  <div class="portal-tab active" onclick="showPortalPage('applications')">Applications</div>
-  <div class="portal-tab" onclick="showPortalPage('analyse')">Météo et Demande</div>
-  <div class="portal-tab" onclick="showPortalPage('secteurs')">Consommation et Demande</div>
-</nav>
-
 <main>
 
-<!-- ══════════ PAGE : APPLICATIONS ══════════ -->
-<div class="portal-page active" id="portal-applications">
+<!-- ══════════ PAGE PRINCIPALE ══════════ -->
+<div class="portal-page" id="portal-applications">
   <div style="max-width:1060px; margin:0 auto; padding:2rem;">
 
   <!-- ── Boîte de présentation ── -->
@@ -608,10 +600,11 @@ footer .footer-credits {
     <div class="card-title"><em>Bienvenue</em></div>
     <p><Bienvenue sur ce portail d'exploration et d'analyse des données ouvertes d'Hydro-Québec</p>
     <p>Ce portail regroupe les applications de données développées par <strong>l'OTERAUD</strong> à partir des jeux de données ouverts d'Hydro-Québec.</p>
-      <p>Chaque application est un fichier HTML autonome : cliquez sur une carte pour l'ouvrir directement dans votre navigateur.</p>
-    <p>Vous retrouverez également dans le bandeau des liens vers des <strong>analyses supplémentaires</strong> qui croisent les données présentées dans chacune des applications.</p>
+    <p>Chaque application est un fichier HTML autonome : cliquez sur une carte pour l'ouvrir directement dans votre navigateur.</p>
+    <p>Vous retrouverez également ci-dessous des <strong>analyses croisées</strong> qui mettent en relation les données présentées dans chacune des applications.</p>
   </div>
 
+  <!-- ── Applications ── -->
   <div class="section-header">
     <h2>Applications disponibles</h2>
     <span class="count">3</span>
@@ -650,8 +643,8 @@ footer .footer-credits {
         <span class="card-cta">Ouvrir →</span>
       </div>
     </a>
-     
-    <!-- ── Données météo historiques ── -->
+
+    <!-- ── APP 3 : Météo historique ── -->
     <a class="app-card" href="météo_open-meteo.html">
       <div class="card-banner"></div>
       <div class="card-body">
@@ -669,6 +662,48 @@ footer .footer-credits {
 
   </div>
 
+  <!-- ── Analyses croisées ── -->
+  <div class="section-header" style="margin-top:2rem;">
+    <h2>Analyses croisées</h2>
+    <span class="count">2</span>
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- ── ANALYSE 1 : Météo × Demande ── -->
+    <div class="app-card" style="cursor:pointer;" onclick="showAnalyse('analyse')">
+      <div class="card-banner" style="background: linear-gradient(135deg, #62878b 0%, #2d4f50 100%);"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-status status-live">Disponible</span>
+        </div>
+        <div class="card-title">Météo × Demande d'électricité</div>
+        <div class="card-desc">Croisez les données météorologiques historiques (température, vent, humidité) avec la demande journalière en électricité. Visualisation temporelle sur double axe, nuage de points et coefficient de corrélation R².</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-meta">Journalier · 2019–2024 · Choix de ville</span>
+        <span class="card-cta">Analyser →</span>
+      </div>
+    </div>
+
+    <!-- ── ANALYSE 2 : Consommation × Demande ── -->
+    <div class="app-card" style="cursor:pointer;" onclick="showAnalyse('secteurs')">
+      <div class="card-banner" style="background: linear-gradient(135deg, #5a8a3e 0%, #2d4f20 100%);"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <span class="card-status status-live">Disponible</span>
+        </div>
+        <div class="card-title">Consommation par secteur × Demande</div>
+        <div class="card-desc">Mettez en relation la consommation mensuelle par secteur d'activité et par région avec la demande globale sur le réseau. Évolution temporelle, nuage de points et répartition sectorielle.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-meta">Mensuel · 2019–2024 · Filtres région & secteur</span>
+        <span class="card-cta">Analyser →</span>
+      </div>
+    </div>
+
+  </div>
+
   <div class="info-box">
     <span class="info-icon">ℹ</span>
     <span>Ce portail regroupe les applications de données développées par l'OTERAUD à partir des jeux de données ouverts d'Hydro-Québec. Chaque application est un fichier HTML autonome — cliquez sur une carte pour l'ouvrir directement dans votre navigateur. De nouvelles applications seront ajoutées au fil du temps.</span>
@@ -678,9 +713,17 @@ footer .footer-credits {
 </div><!-- /portal-applications -->
 
 
-<!-- ══════════ PAGE : ANALYSE CROISÉE ══════════ -->
-<div class="portal-page" id="portal-analyse">
+<!-- ══════════ PANEL : MÉTÉO × DEMANDE ══════════ -->
+<div class="portal-page" id="portal-analyse" style="display:none;">
 <div class="analyse-wrap">
+
+  <div class="analyse-panel-header">
+    <button class="btn-retour" onclick="showAccueil()">← Retour</button>
+    <div>
+      <h2 class="analyse-panel-title">Météo × Demande d'électricité</h2>
+      <p class="analyse-panel-sub">Analyse croisée — données journalières · 2019–2024</p>
+    </div>
+  </div>
 
   <div class="analyse-intro">
     <span class="intro-icon">🔗</span>
@@ -853,9 +896,17 @@ footer .footer-credits {
 </div>
 </div><!-- /portal-analyse -->
 
-<!-- ══════════ PAGE : CONSOMMATION × DEMANDE ══════════ -->
-<div class="portal-page" id="portal-secteurs">
+<!-- ══════════ PANEL : CONSOMMATION × DEMANDE ══════════ -->
+<div class="portal-page" id="portal-secteurs" style="display:none;">
 <div class="analyse-wrap">
+
+  <div class="analyse-panel-header">
+    <button class="btn-retour" onclick="showAccueil()">← Retour</button>
+    <div>
+      <h2 class="analyse-panel-title">Consommation par secteur × Demande</h2>
+      <p class="analyse-panel-sub">Analyse croisée — données mensuelles · 2019–2024</p>
+    </div>
+  </div>
 
   <div class="analyse-intro">
     <span class="intro-icon">⚡</span>
@@ -1014,17 +1065,21 @@ footer .footer-credits {
 </style>
 
 <script>
-/* ══ NAVIGATION PORTAIL ══ */
-function showPortalPage(name) {
-  document.querySelectorAll('.portal-page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.portal-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('portal-' + name).classList.add('active');
-  const map = { applications: 0, analyse: 1, secteurs: 2 };
-  const tabs = document.querySelectorAll('.portal-tab');
-  const idx = map[name] ?? 0;
-  if (tabs[idx]) tabs[idx].classList.add('active');
-  // Charger les selects secteurs si nécessaire
+/* ══ NAVIGATION ══ */
+function showAnalyse(name) {
+  document.getElementById('portal-applications').style.display = 'none';
+  document.getElementById('portal-analyse').style.display  = 'none';
+  document.getElementById('portal-secteurs').style.display = 'none';
+  document.getElementById('portal-' + name).style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   if (name === 'secteurs' && !scSelectsReady) initSCSelects();
+}
+
+function showAccueil() {
+  document.getElementById('portal-applications').style.display = 'block';
+  document.getElementById('portal-analyse').style.display  = 'none';
+  document.getElementById('portal-secteurs').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ══ ANALYSE CROISÉE ══ */
