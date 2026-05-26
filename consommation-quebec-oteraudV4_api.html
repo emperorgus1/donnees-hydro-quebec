@@ -220,6 +220,48 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
   .stat-divider { display: none; }
   .app-nav { padding: 0 1rem; overflow-x: auto; }
 }
+/* MULTI-SELECT CUSTOM */
+.multisel-trigger {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.5rem; min-width: 210px; max-width: 280px;
+  border: 1.5px solid var(--creme); background: var(--creme-light);
+  color: var(--noir); border-radius: 6px; padding: 7px 11px;
+  font-size: 0.82rem; font-family: var(--font); font-weight: 500;
+  cursor: pointer; user-select: none;
+  transition: border-color 0.15s;
+}
+.multisel-trigger:hover, .multisel-trigger.open { border-color: var(--teal); background: #fff; }
+.multisel-arrow { font-size: 0.65rem; color: var(--teal); flex-shrink: 0; }
+.multisel-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0;
+  background: #fff; border: 1.5px solid var(--teal);
+  border-radius: 8px; box-shadow: 0 6px 20px rgba(98,135,139,0.18);
+  z-index: 200; min-width: 240px; max-width: 300px;
+  padding: 0.5rem 0; overflow: hidden;
+}
+.multisel-actions {
+  display: flex; gap: 0.4rem; padding: 0.4rem 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--creme-light);
+}
+.multisel-actions button {
+  flex: 1; padding: 4px 8px; font-size: 0.66rem; font-weight: 700;
+  border-radius: 4px; border: 1.5px solid var(--creme);
+  background: var(--creme-light); color: var(--teal);
+  cursor: pointer; letter-spacing: 0.03em;
+  transition: background 0.1s, border-color 0.1s;
+}
+.multisel-actions button:hover { background: var(--teal-light); border-color: var(--teal); }
+.multisel-list { max-height: 260px; overflow-y: auto; padding: 0.3rem 0; }
+.multisel-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 5px 0.75rem; cursor: pointer;
+  font-size: 0.8rem; font-family: var(--font); color: var(--noir);
+  transition: background 0.1s;
+}
+.multisel-item:hover { background: var(--teal-light); }
+.multisel-item input[type=checkbox] { accent-color: var(--teal); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.multisel-item.checked { font-weight: 600; color: var(--teal); }
+
 /* TÉLÉCHARGEMENT */
 .download-bar {
   display: flex; align-items: center; justify-content: space-between;
@@ -407,14 +449,43 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
   <div class="charts-page">
     <div class="chart-card">
       <h2>Consommation totale par secteur</h2>
-      <p class="chart-desc">Comparaison de la consommation cumulée (GWh) entre les secteurs d'activité.</p>
-      <div class="chart-controls">
-        <label>Région</label>
-        <select id="sec-region" onchange="buildSecteurChart()"><option value="">Toutes</option></select>
-        <label style="margin-left:1rem">Année</label>
-        <select id="sec-annee" onchange="buildSecteurChart()"><option value="">Toutes</option></select>
+      <p class="chart-desc">Comparaison de la consommation cumulée (GWh) entre les secteurs d'activité. Sélectionnez une ou plusieurs régions pour les comparer côte à côte.</p>
+      <div class="chart-controls" style="align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+
+        <!-- Multi-sélecteur régions -->
+        <div class="filter-group" style="position:relative;">
+          <label>Régions</label>
+          <div id="sec-region-trigger" class="multisel-trigger" onclick="toggleSecRegionDropdown(event)">
+            <span id="sec-region-label">Toutes les régions</span>
+            <span class="multisel-arrow">▾</span>
+          </div>
+          <div id="sec-region-dropdown" class="multisel-dropdown" style="display:none;">
+            <div class="multisel-actions">
+              <button type="button" onclick="secRegionToggleAll(true)">Tout sélectionner</button>
+              <button type="button" onclick="secRegionToggleAll(false)">Tout désélectionner</button>
+            </div>
+            <div id="sec-region-list" class="multisel-list"></div>
+          </div>
+        </div>
+
+        <!-- Multi-sélecteur années -->
+        <div class="filter-group" style="position:relative;">
+          <label>Années</label>
+          <div id="sec-annee-trigger" class="multisel-trigger" onclick="toggleSecAnneeDropdown(event)">
+            <span id="sec-annee-label">Toutes les années</span>
+            <span class="multisel-arrow">▾</span>
+          </div>
+          <div id="sec-annee-dropdown" class="multisel-dropdown" style="display:none;">
+            <div class="multisel-actions">
+              <button type="button" onclick="secAnneeToggleAll(true)">Tout sélectionner</button>
+              <button type="button" onclick="secAnneeToggleAll(false)">Tout désélectionner</button>
+            </div>
+            <div id="sec-annee-list" class="multisel-list"></div>
+          </div>
+        </div>
+
       </div>
-      <div class="chart-wrap" style="height:320px"><canvas id="chart-secteurs"></canvas></div>
+      <div class="chart-wrap" style="height:420px"><canvas id="chart-secteurs"></canvas></div>
     </div>
   </div>
 </div>
@@ -424,19 +495,42 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
   <div class="charts-page">
     <div class="chart-card">
       <h2>Évolution historique de la consommation</h2>
-      <p class="chart-desc">Consommation mensuelle (GWh) de 2016 à 2025. Sélectionnez une ou plusieurs régions et/ou secteurs.</p>
-      <div class="chart-controls">
-        <label>Région</label>
-        <select id="evo-region" onchange="buildEvoChart()"><option value="">Toutes</option></select>
-        <label style="margin-left:1rem">Secteur</label>
-        <select id="evo-secteur" onchange="buildEvoChart()"><option value="">Tous</option></select>
-        <label style="margin-left:1rem">Granularité</label>
-        <select id="evo-gran" onchange="buildEvoChart()">
-          <option value="month">Mensuelle</option>
-          <option value="year">Annuelle</option>
-        </select>
+      <p class="chart-desc">Consommation (GWh) de 2016 à 2025. Sélectionnez une ou plusieurs régions pour comparer leur évolution sur la même ligne du temps.</p>
+      <div class="chart-controls" style="align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+
+        <!-- Multi-sélecteur régions -->
+        <div class="filter-group" style="position:relative;">
+          <label>Régions</label>
+          <div id="evo-region-trigger" class="multisel-trigger" onclick="toggleEvoRegionDropdown(event)">
+            <span id="evo-region-label">Toutes les régions</span>
+            <span class="multisel-arrow">▾</span>
+          </div>
+          <div id="evo-region-dropdown" class="multisel-dropdown" style="display:none;">
+            <div class="multisel-actions">
+              <button type="button" onclick="evoRegionToggleAll(true)">Tout sélectionner</button>
+              <button type="button" onclick="evoRegionToggleAll(false)">Tout désélectionner</button>
+            </div>
+            <div id="evo-region-list" class="multisel-list"></div>
+          </div>
+        </div>
+
+        <!-- Secteur -->
+        <div class="filter-group">
+          <label>Secteur</label>
+          <select id="evo-secteur" onchange="buildEvoChart()"><option value="">Tous</option></select>
+        </div>
+
+        <!-- Granularité -->
+        <div class="filter-group">
+          <label>Granularité</label>
+          <select id="evo-gran" onchange="buildEvoChart()">
+            <option value="month">Mensuelle</option>
+            <option value="year">Annuelle</option>
+          </select>
+        </div>
+
       </div>
-      <div class="chart-wrap" style="height:380px"><canvas id="chart-evo"></canvas></div>
+      <div class="chart-wrap" style="height:420px"><canvas id="chart-evo"></canvas></div>
     </div>
   </div>
 </div>
@@ -592,9 +686,46 @@ function initSelects() {
   const REGIONS  = [...new Set(ALL_DATA.map(d=>d.region))].sort((a,b)=>a.localeCompare(b,'fr'));
   const SECTEURS = [...new Set(ALL_DATA.map(d=>d.secteur))].sort();
   const ANNEES   = [...new Set(ALL_DATA.map(d=>d.mois.substring(0,4)))].sort();
-  ['fil-region','sec-region','evo-region'].forEach(id => populateSel(id, REGIONS, id==='fil-region'?'Toutes les régions':'Toutes'));
+  ['fil-region'].forEach(id => populateSel(id, REGIONS, 'Toutes les régions'));
   ['fil-secteur','reg-secteur','evo-secteur','carte-secteur'].forEach(id => populateSel(id, SECTEURS, id==='fil-secteur'?'Tous les secteurs':'Tous'));
-  ['fil-annee','reg-annee','sec-annee','carte-annee'].forEach(id => populateSel(id, ANNEES, id==='fil-annee'?'Toutes les années':'Toutes'));
+  ['fil-annee','reg-annee','carte-annee'].forEach(id => populateSel(id, ANNEES, id==='fil-annee'?'Toutes les années':'Toutes'));
+
+  /* Construire la liste de cases à cocher pour le multi-sélecteur régions (onglet Secteurs) */
+  const list = document.getElementById('sec-region-list');
+  if(list) {
+    list.innerHTML = '';
+    REGIONS.forEach(r => {
+      const item = document.createElement('label');
+      item.className = 'multisel-item';
+      item.innerHTML = `<input type="checkbox" value="${r}" onchange="onSecRegionChange()"> ${r}`;
+      list.appendChild(item);
+    });
+  }
+
+  /* Construire la liste de cases à cocher pour le multi-sélecteur années (onglet Secteurs) */
+  const anneeList = document.getElementById('sec-annee-list');
+  if(anneeList) {
+    anneeList.innerHTML = '';
+    ANNEES.forEach(a => {
+      const item = document.createElement('label');
+      item.className = 'multisel-item';
+      item.innerHTML = `<input type="checkbox" value="${a}" onchange="onSecAnneeChange()"> ${a}`;
+      anneeList.appendChild(item);
+    });
+  }
+
+  /* Construire la liste de cases à cocher pour le multi-sélecteur régions (onglet Évolution) */
+  const evoList = document.getElementById('evo-region-list');
+  if(evoList) {
+    evoList.innerHTML = '';
+    REGIONS.forEach(r => {
+      const item = document.createElement('label');
+      item.className = 'multisel-item';
+      item.innerHTML = `<input type="checkbox" value="${r}" onchange="onEvoRegionChange()"> ${r}`;
+      evoList.appendChild(item);
+    });
+  }
+
   // Rendre les constantes accessibles globalement pour les graphiques
   window.REGIONS  = REGIONS;
   window.SECTEURS = SECTEURS;
@@ -656,109 +787,351 @@ function buildRegionChart() {
   }
 }
 
-/* ══ CHART 2 — SECTEURS ══ */
-function buildSecteurChart() {
-  const region = document.getElementById('sec-region').value;
-  const annee  = document.getElementById('sec-annee').value;
-
-  let d = ALL_DATA;
-  if(region) d = d.filter(x=>x.region===region);
-  if(annee)  d = d.filter(x=>x.mois.startsWith(annee));
-
-  const bySecteur = {};
-  (window.SECTEURS||[]).forEach(s=>bySecteur[s]=0);
-  d.forEach(x=>bySecteur[x.secteur]=(bySecteur[x.secteur]||0)+x.kwh);
-
-  const labels = window.SECTEURS||[];
-  const values = labels.map(s=>bySecteur[s]/1e6);
-  const colors = labels.map(s=>SECTEUR_COLORS[s]||'#888');
-
-  if(chartSecteurs) {
-    chartSecteurs.data.labels = labels;
-    chartSecteurs.data.datasets[0].data = values;
-    chartSecteurs.data.datasets[0].backgroundColor = colors;
-    chartSecteurs.update('active');
-  } else {
-  chartSecteurs = new Chart(document.getElementById('chart-secteurs'), {
-    type:'bar',
-    data:{ labels, datasets:[{ label:'Consommation (GWh)', data:values, backgroundColor:colors, borderRadius:6, borderSkipped:false }] },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString('fr-CA',{maximumFractionDigits:1})+' GWh'}}
-      },
-      scales:{
-        x:{ grid:{display:false}, ticks:{font:{size:11,weight:'600'}} },
-        y:{ grid:{color:'#ede8df'}, ticks:{callback:v=>v.toLocaleString('fr-CA',{maximumFractionDigits:0})+' GWh'} }
-      }
-    }
-  });
-  }
+/* ══ MULTI-SÉLECTEUR ANNÉES (onglet Secteurs) ══ */
+function getSecAnneesSelected() {
+  const boxes = document.querySelectorAll('#sec-annee-list input[type=checkbox]:checked');
+  return Array.from(boxes).map(b => b.value);
 }
 
-/* ══ CHART 3 — ÉVOLUTION ══ */
+function updateSecAnneeLabel() {
+  const sel = getSecAnneesSelected();
+  const lbl = document.getElementById('sec-annee-label');
+  if(!lbl) return;
+  if(sel.length === 0) lbl.textContent = 'Toutes les années';
+  else if(sel.length === 1) lbl.textContent = sel[0];
+  else lbl.textContent = sel.length + ' années sélectionnées';
+  document.querySelectorAll('#sec-annee-list .multisel-item').forEach(item => {
+    const cb = item.querySelector('input');
+    item.classList.toggle('checked', cb && cb.checked);
+  });
+}
+
+function onSecAnneeChange() {
+  updateSecAnneeLabel();
+  buildSecteurChart();
+}
+
+function secAnneeToggleAll(state) {
+  document.querySelectorAll('#sec-annee-list input[type=checkbox]').forEach(cb => cb.checked = state);
+  updateSecAnneeLabel();
+  buildSecteurChart();
+}
+
+function toggleSecAnneeDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('sec-annee-dropdown');
+  const trigger = document.getElementById('sec-annee-trigger');
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  trigger.classList.toggle('open', !isOpen);
+}
+
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('sec-annee-dropdown');
+  const trigger = document.getElementById('sec-annee-trigger');
+  if(dd && !dd.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
+    dd.style.display = 'none';
+    if(trigger) trigger.classList.remove('open');
+  }
+});
+
+/* ══ CHART 2 — SECTEURS (multi-régions × multi-années) ══ */
+function buildSecteurChart() {
+  const selectedRegions = getSecRegionsSelected();   // [] = toutes
+  const selectedAnnees  = getSecAnneesSelected();    // [] = toutes
+  const secteurs = window.SECTEURS || [];
+
+  /*
+   * Logique des dimensions :
+   *   - Aucune région, aucune année  → 1 dataset (toutes régions, toutes années) couleurs par secteur
+   *   - Régions seules               → 1 dataset par région
+   *   - Années seules                → 1 dataset par année
+   *   - Régions + années             → 1 dataset par combinaison région × année
+   */
+  const regions = selectedRegions.length > 0 ? selectedRegions : [null];
+  const annees  = selectedAnnees.length  > 0 ? selectedAnnees  : [null];
+
+  const multiRegion = regions[0] !== null;
+  const multiAnnee  = annees[0]  !== null;
+  const multiMode   = multiRegion || multiAnnee;
+
+  /* Palette pour les datasets — on alterne entre REGION_PALETTE et une palette années */
+  const ANNEE_PALETTE = [
+    '#62878b','#f59e19','#a45a37','#c4987c','#3a6060',
+    '#d4820f','#7a3d22','#2d4f50','#b86d0c','#5c2d18'
+  ];
+
+  const datasets = [];
+  let dsIdx = 0;
+
+  regions.forEach((region, ri) => {
+    annees.forEach((annee, ai) => {
+      let d = ALL_DATA;
+      if(region) d = d.filter(x => x.region === region);
+      if(annee)  d = d.filter(x => x.mois.startsWith(annee));
+
+      const bySecteur = {};
+      secteurs.forEach(s => bySecteur[s] = 0);
+      d.forEach(x => bySecteur[x.secteur] = (bySecteur[x.secteur] || 0) + x.kwh);
+
+      /* Étiquette du dataset */
+      let label;
+      if(!multiRegion && !multiAnnee)  label = 'Toutes les régions';
+      else if(multiRegion && !multiAnnee) label = region;
+      else if(!multiRegion && multiAnnee) label = annee;
+      else label = region + ' · ' + annee;
+
+      /* Couleur du dataset */
+      let color;
+      if(!multiMode) {
+        // Couleurs individuelles par secteur
+        datasets.push({
+          label,
+          data: secteurs.map(s => bySecteur[s] / 1e6),
+          backgroundColor: secteurs.map(s => SECTEUR_COLORS[s] || '#888'),
+          borderRadius: 6, borderSkipped: false,
+        });
+        return;
+      }
+      if(multiAnnee && !multiRegion) {
+        color = ANNEE_PALETTE[ai % ANNEE_PALETTE.length];
+      } else {
+        color = REGION_PALETTE[(multiRegion ? ri : dsIdx) % REGION_PALETTE.length];
+      }
+
+      datasets.push({
+        label,
+        data: secteurs.map(s => bySecteur[s] / 1e6),
+        backgroundColor: color,
+        borderRadius: 6, borderSkipped: false,
+      });
+      dsIdx++;
+    });
+  });
+
+  if(chartSecteurs) {
+    chartSecteurs.data.labels = secteurs;
+    chartSecteurs.data.datasets = datasets;
+    chartSecteurs.options.plugins.legend.display = multiMode;
+    chartSecteurs.update('active');
+  } else {
+    chartSecteurs = new Chart(document.getElementById('chart-secteurs'), {
+      type: 'bar',
+      data: { labels: secteurs, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: multiMode,
+            labels: { font: { family: 'Montserrat', size: 11 }, boxWidth: 14 }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + ctx.dataset.label + ' : ' + ctx.parsed.y.toLocaleString('fr-CA', { maximumFractionDigits: 1 }) + ' GWh'
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11, weight: '600' } } },
+          y: { grid: { color: '#ede8df' }, ticks: { callback: v => v.toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' GWh' } }
+        }
+      }
+    });
+  }
+}
+function getSecRegionsSelected() {
+  const boxes = document.querySelectorAll('#sec-region-list input[type=checkbox]:checked');
+  return Array.from(boxes).map(b => b.value);
+}
+
+function updateSecRegionLabel() {
+  const sel = getSecRegionsSelected();
+  const lbl = document.getElementById('sec-region-label');
+  if(!lbl) return;
+  if(sel.length === 0) lbl.textContent = 'Toutes les régions';
+  else if(sel.length === 1) lbl.textContent = sel[0];
+  else lbl.textContent = sel.length + ' régions sélectionnées';
+  /* Mettre en évidence les items cochés */
+  document.querySelectorAll('#sec-region-list .multisel-item').forEach(item => {
+    const cb = item.querySelector('input');
+    item.classList.toggle('checked', cb && cb.checked);
+  });
+}
+
+function onSecRegionChange() {
+  updateSecRegionLabel();
+  buildSecteurChart();
+}
+
+function secRegionToggleAll(state) {
+  document.querySelectorAll('#sec-region-list input[type=checkbox]').forEach(cb => cb.checked = state);
+  updateSecRegionLabel();
+  buildSecteurChart();
+}
+
+function toggleSecRegionDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('sec-region-dropdown');
+  const trigger = document.getElementById('sec-region-trigger');
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  trigger.classList.toggle('open', !isOpen);
+}
+
+/* Fermer le dropdown en cliquant ailleurs */
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('sec-region-dropdown');
+  const trigger = document.getElementById('sec-region-trigger');
+  if(dd && !dd.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
+    dd.style.display = 'none';
+    if(trigger) trigger.classList.remove('open');
+  }
+});
+
+
+/* ══ MULTI-SÉLECTEUR RÉGIONS (onglet Évolution) ══ */
+function getEvoRegionsSelected() {
+  const boxes = document.querySelectorAll('#evo-region-list input[type=checkbox]:checked');
+  return Array.from(boxes).map(b => b.value);
+}
+
+function updateEvoRegionLabel() {
+  const sel = getEvoRegionsSelected();
+  const lbl = document.getElementById('evo-region-label');
+  if(!lbl) return;
+  if(sel.length === 0) lbl.textContent = 'Toutes les régions';
+  else if(sel.length === 1) lbl.textContent = sel[0];
+  else lbl.textContent = sel.length + ' régions sélectionnées';
+  document.querySelectorAll('#evo-region-list .multisel-item').forEach(item => {
+    const cb = item.querySelector('input');
+    item.classList.toggle('checked', cb && cb.checked);
+  });
+}
+
+function onEvoRegionChange() {
+  updateEvoRegionLabel();
+  buildEvoChart();
+}
+
+function evoRegionToggleAll(state) {
+  document.querySelectorAll('#evo-region-list input[type=checkbox]').forEach(cb => cb.checked = state);
+  updateEvoRegionLabel();
+  buildEvoChart();
+}
+
+function toggleEvoRegionDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('evo-region-dropdown');
+  const trigger = document.getElementById('evo-region-trigger');
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  trigger.classList.toggle('open', !isOpen);
+}
+
+/* Fermer le dropdown évolution en cliquant ailleurs */
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('evo-region-dropdown');
+  const trigger = document.getElementById('evo-region-trigger');
+  if(dd && !dd.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
+    dd.style.display = 'none';
+    if(trigger) trigger.classList.remove('open');
+  }
+});
+
+/* ══ CHART 3 — ÉVOLUTION (multi-régions) ══ */
 function buildEvoChart() {
-  const region  = document.getElementById('evo-region').value;
+  const selectedRegions = getEvoRegionsSelected();   // [] = toutes
   const secteur = document.getElementById('evo-secteur').value;
   const gran    = document.getElementById('evo-gran').value;
 
-  let d = ALL_DATA;
-  if(region)  d = d.filter(x=>x.region===region);
-  if(secteur) d = d.filter(x=>x.secteur===secteur);
+  /* Déterminer les séries à tracer */
+  let series;
+  if(selectedRegions.length === 0) {
+    series = [{ region: null, label: 'Toutes les régions' }];
+  } else {
+    series = selectedRegions.map((r, i) => ({ region: r, label: r, colorIdx: i }));
+  }
 
-  /* Group by time key */
-  const grouped = {};
-  d.forEach(x => {
-    const key = gran==='year' ? x.mois.substring(0,4) : x.mois.substring(0,7);
-    grouped[key] = (grouped[key]||0) + x.kwh;
+  /* Construire les labels temporels à partir de la plage globale */
+  let allKeys = new Set();
+  series.forEach(({ region }) => {
+    let d = ALL_DATA;
+    if(region)  d = d.filter(x => x.region === region);
+    if(secteur) d = d.filter(x => x.secteur === secteur);
+    d.forEach(x => allKeys.add(gran === 'year' ? x.mois.substring(0,4) : x.mois.substring(0,7)));
   });
-
-  const keys = Object.keys(grouped).sort();
+  const keys = [...allKeys].sort();
   const labels = keys.map(k => {
-    if(gran==='year') return k;
+    if(gran === 'year') return k;
     const [y,m] = k.split('-');
-    return new Date(+y,+m-1,1).toLocaleDateString('fr-CA',{month:'short',year:'2-digit'});
+    return new Date(+y, +m-1, 1).toLocaleDateString('fr-CA', { month:'short', year:'2-digit' });
   });
-  const values = keys.map(k=>grouped[k]/1e6);
 
-  /* Determine line color */
-  let lineColor = COLORS.teal;
-  if(secteur) lineColor = SECTEUR_COLORS[secteur]||COLORS.teal;
+  /* Construire un dataset par série */
+  const multiMode = series.length > 1;
+  const datasets = series.map(({ region, label, colorIdx }, idx) => {
+    let d = ALL_DATA;
+    if(region)  d = d.filter(x => x.region === region);
+    if(secteur) d = d.filter(x => x.secteur === secteur);
+
+    const grouped = {};
+    d.forEach(x => {
+      const key = gran === 'year' ? x.mois.substring(0,4) : x.mois.substring(0,7);
+      grouped[key] = (grouped[key] || 0) + x.kwh;
+    });
+    const values = keys.map(k => grouped[k] != null ? grouped[k] / 1e6 : null);
+
+    /* Couleur : palette régions en multi, couleur secteur (ou teal) en mono */
+    let color;
+    if(multiMode) {
+      color = REGION_PALETTE[(colorIdx !== undefined ? colorIdx : idx) % REGION_PALETTE.length];
+    } else {
+      color = secteur ? (SECTEUR_COLORS[secteur] || COLORS.teal) : COLORS.teal;
+    }
+
+    return {
+      label,
+      data: values,
+      borderColor: color,
+      backgroundColor: multiMode ? color + '18' : color + '22',
+      borderWidth: multiMode ? 2 : 2.5,
+      pointRadius: gran === 'year' ? 5 : (multiMode ? 1 : 2),
+      pointHoverRadius: 6,
+      fill: !multiMode,   // fill seulement en mode mono
+      tension: 0.35,
+      spanGaps: true,
+    };
+  });
 
   if(chartEvo) {
     chartEvo.data.labels = labels;
-    chartEvo.data.datasets[0].data = values;
-    chartEvo.data.datasets[0].borderColor = lineColor;
-    chartEvo.data.datasets[0].backgroundColor = lineColor+'22';
-    chartEvo.data.datasets[0].pointRadius = gran==='year'?5:2;
+    chartEvo.data.datasets = datasets;
+    chartEvo.options.plugins.legend.display = multiMode;
     chartEvo.update('active');
   } else {
-  chartEvo = new Chart(document.getElementById('chart-evo'), {
-    type:'line',
-    data:{ labels, datasets:[{
-      label:'Consommation (GWh)',
-      data:values,
-      borderColor:lineColor,
-      backgroundColor:lineColor+'22',
-      borderWidth:2.5,
-      pointRadius: gran==='year'?5:2,
-      pointHoverRadius:6,
-      fill:true,
-      tension:0.35
-    }]},
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y.toLocaleString('fr-CA',{maximumFractionDigits:1})+' GWh'}}
-      },
-      scales:{
-        x:{ grid:{color:'#ede8df'}, ticks:{maxTicksLimit:20, maxRotation:45, font:{size:10}} },
-        y:{ grid:{color:'#ede8df'}, ticks:{callback:v=>v.toLocaleString('fr-CA',{maximumFractionDigits:0})+' GWh'} }
+    chartEvo = new Chart(document.getElementById('chart-evo'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: multiMode,
+            labels: { font: { family: 'Montserrat', size: 11 }, boxWidth: 14 }
+          },
+          tooltip: {
+            mode: 'index', intersect: false,
+            callbacks: {
+              label: ctx => ' ' + ctx.dataset.label + ' : ' + (ctx.parsed.y != null ? ctx.parsed.y.toLocaleString('fr-CA', { maximumFractionDigits: 1 }) + ' GWh' : '—')
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: '#ede8df' }, ticks: { maxTicksLimit: 20, maxRotation: 45, font: { size: 10 } } },
+          y: { grid: { color: '#ede8df' }, ticks: { callback: v => v.toLocaleString('fr-CA', { maximumFractionDigits: 0 }) + ' GWh' } }
+        }
       }
-    }
-  });
+    });
   }
 }
 
