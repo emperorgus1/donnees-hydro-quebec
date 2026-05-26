@@ -910,12 +910,10 @@ function buildSecteurChart() {
   });
 
   if(chartSecteurs) {
-    chartSecteurs.data.labels = secteurs;
-    chartSecteurs.data.datasets = datasets;
-    chartSecteurs.options.plugins.legend.display = multiMode;
-    chartSecteurs.update('active');
-  } else {
-    chartSecteurs = new Chart(document.getElementById('chart-secteurs'), {
+    chartSecteurs.destroy();
+    chartSecteurs = null;
+  }
+  chartSecteurs = new Chart(document.getElementById('chart-secteurs'), {
       type: 'bar',
       data: { labels: secteurs, datasets },
       options: {
@@ -937,7 +935,6 @@ function buildSecteurChart() {
         }
       }
     });
-  }
 }
 function getSecRegionsSelected() {
   const boxes = document.querySelectorAll('#sec-region-list input[type=checkbox]:checked');
