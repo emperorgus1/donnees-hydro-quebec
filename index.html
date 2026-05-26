@@ -75,7 +75,7 @@ header p {
 /* ── Contenu principal ── */
 main {
   flex: 1;
-  padding: 2rem;
+  padding: 1.75rem 2rem 2rem;
   max-width: 1060px;
   margin: 0 auto;
   width: 100%;
@@ -510,9 +510,6 @@ footer .footer-credits {
 .btn-export.csv:hover { background: #d6edcf; border-color: #5a9040; }
 
 
-/* Intro analyse */
-.analyse-intro {
-
 /* ── En-tête panneau analyse ── */
 .analyse-panel-header {
   display: flex;
@@ -593,7 +590,7 @@ footer .footer-credits {
 
 <!-- ══════════ PAGE PRINCIPALE ══════════ -->
 <div class="portal-page" id="portal-applications">
-  <div style="max-width:1060px; margin:0 auto; padding:2rem;">
+  <div style="max-width:1060px; margin:0 auto; padding:0 2rem 2rem;">
 
   <!-- ── Boîte de présentation ── -->
   <div class="accueil-textbox">
@@ -725,7 +722,8 @@ footer .footer-credits {
   </div>
 
   <div class="analyse-intro">
-      <span>Cette analyse croise les <strong>données météorologiques</strong> (Open-Meteo / ERA5) avec la <strong>demande d'électricité horaire</strong> (Hydro-Québec, 2019–2024). La demande horaire est agrégée en <strong>moyenne journalière</strong> (MW) pour être mise en relation avec la température quotidienne. Choisissez une ville, une période et lancez l'analyse.</span>
+    <span class="intro-icon">🌡️</span>
+    <span>Cette analyse croise les <strong>données météorologiques</strong> (Open-Meteo / ERA5) avec la <strong>demande d'électricité horaire</strong> (Hydro-Québec, 2019–2024). La demande horaire est agrégée en <strong>moyenne journalière</strong> (MW) pour être mise en relation avec la température quotidienne. Choisissez une ville, une période et lancez l'analyse.</span>
   </div>
 
   <!-- Contrôles -->
