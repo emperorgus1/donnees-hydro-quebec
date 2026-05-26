@@ -89,7 +89,6 @@ main {
   border-radius: 10px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.75rem;
-  margin-top: 0.25rem;
   font-size: 0.86rem;
   line-height: 1.75;
   color: #444;
@@ -573,7 +572,7 @@ footer .footer-credits {
 </head>
 <body>
 
-<div class="oteraud-bar">OTERAUD — Observatoire des territoires</div>
+<div class="oteraud-bar">OTERAUD — Observatoire des territoires : aménagement, urbanisme, développement</div>
 
 <header>
   <div class="header-inner">
@@ -583,8 +582,8 @@ footer .footer-credits {
       </a>
       <div class="header-logo-divider"></div>
       <div>
-        <h1>Portail d'accès aux données ouvertes d'Hydro-Québec</h1>
-      <p>Accès centralisé aux applications de visualisation et d'exploration des données ouvertes d'Hydro-Québec, produites par l'OTERAUD.</p>
+        <h1>Portail d'analyses basées sur les données ouvertes</h1>
+      <p>Accès centralisé aux applications de visualisation et d'exploration des données ouvertes, produites par l'OTERAUD.</p>
       </div>
     </div>
   </div>
@@ -600,15 +599,15 @@ footer .footer-credits {
   <div class="accueil-textbox">
     <div class="card-title"><em>Bienvenue</em></div>
     <p><Bienvenue sur ce portail d'exploration et d'analyse des données ouvertes d'Hydro-Québec</p>
-    <p>Ce portail regroupe les applications de données développées par <strong>l'OTERAUD</strong> à partir des jeux de données ouverts d'Hydro-Québec.</p>
+    <p>Ce portail regroupe les applications de données développées par <strong>l'OTERAUD</strong> à partir de différents jeux de données ouverts.</p>
     <p>Chaque application est un fichier HTML autonome : cliquez sur une carte pour l'ouvrir directement dans votre navigateur.</p>
-    <p>Vous retrouverez également ci-dessous des <strong>analyses croisées</strong> qui mettent en relation les données présentées dans chacune des applications.</p>
+    <p>Vous retrouverez également ci-dessous des <strong>analyses croisées</strong> qui mettent en relation les données présentées dans chacune des applications pour des analyses un peu plus approfondies.</p>
   </div>
 
   <!-- ── Applications ── -->
   <div class="section-header">
     <h2>Applications disponibles</h2>
-    <span class="count">3</span>
+
   </div>
 
   <div class="cards-grid">
@@ -653,7 +652,7 @@ footer .footer-credits {
           <span class="card-status status-live">Disponible</span>
         </div>
         <div class="card-title">Météo historique</div>
-        <div class="card-desc">Explorez les données météorologiques quotidiennes du Québec de 1940 à aujourd'hui. Graphiques, carte interactive et tableau de données. Source : Open-Meteo / ERA5 (ECMWF).</div>
+        <div class="card-desc">Explorez les données météorologiques quotidiennes du Québec de 1940 à aujourd'hui. Graphiques, carte interactive et tableau de données.</div>
       </div>
       <div class="card-footer">
         <span class="card-meta">9 variables · Québec · 1940–aujourd'hui</span>
@@ -666,19 +665,18 @@ footer .footer-credits {
   <!-- ── Analyses croisées ── -->
   <div class="section-header" style="margin-top:2rem;">
     <h2>Analyses croisées</h2>
-    <span class="count">2</span>
-  </div>
+      </div>
 
   <div class="cards-grid">
 
-    <!-- ── ANALYSE 1 : Météo × Demande ── -->
+    <!-- ── ANALYSE 1 : Météo x Demande ── -->
     <div class="app-card" style="cursor:pointer;" onclick="showAnalyse('analyse')">
       <div class="card-banner" style="background: linear-gradient(135deg, #62878b 0%, #2d4f50 100%);"></div>
       <div class="card-body">
         <div class="card-top">
           <span class="card-status status-live">Disponible</span>
         </div>
-        <div class="card-title">Météo × Demande d'électricité</div>
+        <div class="card-title">Météo et Demande d'électricité</div>
         <div class="card-desc">Croisez les données météorologiques historiques (température, vent, humidité) avec la demande journalière en électricité. Visualisation temporelle sur double axe, nuage de points et coefficient de corrélation R².</div>
       </div>
       <div class="card-footer">
@@ -694,7 +692,7 @@ footer .footer-credits {
         <div class="card-top">
           <span class="card-status status-live">Disponible</span>
         </div>
-        <div class="card-title">Consommation par secteur × Demande</div>
+        <div class="card-title">Consommation par secteur et Demande</div>
         <div class="card-desc">Mettez en relation la consommation mensuelle par secteur d'activité et par région avec la demande globale sur le réseau. Évolution temporelle, nuage de points et répartition sectorielle.</div>
       </div>
       <div class="card-footer">
@@ -707,7 +705,7 @@ footer .footer-credits {
 
   <div class="info-box">
     <span class="info-icon">ℹ</span>
-    <span>Ce portail regroupe les applications de données développées par l'OTERAUD à partir des jeux de données ouverts d'Hydro-Québec. Chaque application est un fichier HTML autonome — cliquez sur une carte pour l'ouvrir directement dans votre navigateur. De nouvelles applications seront ajoutées au fil du temps.</span>
+    <span>Ce portail regroupe les applications de données développées par l'OTERAUD à partir de différents jeux de données ouverts. Chaque application est un fichier HTML autonome, il suffit de cliquer sur une carte pour l'ouvrir directement dans votre navigateur. De nouvelles applications seront ajoutées au fil du temps.</span>
   </div>
 
   </div>
@@ -721,14 +719,13 @@ footer .footer-credits {
   <div class="analyse-panel-header">
     <button class="btn-retour" onclick="showAccueil()">← Retour</button>
     <div>
-      <h2 class="analyse-panel-title">Météo × Demande d'électricité</h2>
-      <p class="analyse-panel-sub">Analyse croisée — données journalières · 2019–2024</p>
+      <h2 class="analyse-panel-title">Météo et Demande d'électricité</h2>
+      <p class="analyse-panel-sub">Données journalières · 2019–2024</p>
     </div>
   </div>
 
   <div class="analyse-intro">
-    <span class="intro-icon">🔗</span>
-    <span>Cette analyse croise les <strong>données météorologiques</strong> (Open-Meteo / ERA5) avec la <strong>demande d'électricité horaire</strong> (Hydro-Québec, 2019–2024). La demande horaire est agrégée en <strong>moyenne journalière</strong> (MW) pour être mise en relation avec la température quotidienne. Choisissez une ville, une période et lancez l'analyse.</span>
+      <span>Cette analyse croise les <strong>données météorologiques</strong> (Open-Meteo / ERA5) avec la <strong>demande d'électricité horaire</strong> (Hydro-Québec, 2019–2024). La demande horaire est agrégée en <strong>moyenne journalière</strong> (MW) pour être mise en relation avec la température quotidienne. Choisissez une ville, une période et lancez l'analyse.</span>
   </div>
 
   <!-- Contrôles -->
@@ -782,9 +779,9 @@ footer .footer-credits {
     <div class="ctrl-group">
       <label>Période</label>
       <div style="display:flex; gap:0.4rem; flex-wrap:wrap; align-items:center; margin-bottom:0.4rem;">
-        <button class="btn-period-ac active" onclick="setACPeriod('2019-01-01','2024-12-31',this)">2019–2024</button>
-        <button class="btn-period-ac" onclick="setACPeriod('2022-01-01','2024-12-31',this)">2022–2024</button>
         <button class="btn-period-ac" onclick="setACPeriod('2019-01-01','2021-12-31',this)">2019–2021</button>
+        <button class="btn-period-ac" onclick="setACPeriod('2022-01-01','2024-12-31',this)">2022–2024</button>
+        <button class="btn-period-ac active" onclick="setACPeriod('2019-01-01','2024-12-31',this)">2019–2024</button>
         <button class="btn-period-ac" onclick="toggleACCustomDates(this)">Perso.</button>
       </div>
       <div id="ac-custom-dates" style="display:none; gap:0.5rem; align-items:center; flex-wrap:wrap;">
@@ -807,7 +804,7 @@ footer .footer-credits {
       </select>
     </div>
 
-    <button class="btn-analyser" id="btn-analyser" onclick="lancerAnalyse()">⬇ Lancer l'analyse</button>
+    <button class="btn-analyser" id="btn-analyser" onclick="lancerAnalyse()">Lancer l'analyse</button>
   </div>
 
   <!-- Loader -->
@@ -847,23 +844,7 @@ footer .footer-credits {
     </div>
   </div>
 
-  <!-- Légende R² -->
-  <div class="r2-legend" id="as-r2-legend">
-    <div class="r2-legend-title">À propos du R²</div>
-    <div class="r2-legend-desc">
-      Le <strong>R²</strong> (coefficient de détermination) mesure à quel point deux variables évoluent ensemble.
-      Un R² de <strong>0,80</strong> signifie que 80 % des variations de la demande s'expliquent par les variations de la variable météo sélectionnée.
-      Le reste provient d'autres facteurs (jours fériés, conjoncture, etc.).
-      <br>⚠ Le R² indique une <em>corrélation</em>, pas une <em>causalité</em>.
-    </div>
-    <div class="r2-scale-item" style="margin-left:auto; flex-direction:column; gap:5px; align-items:flex-start;">
-      <div class="r2-scale-item"><span class="emoji">🟢</span> R² &gt; 0,50 — Fort lien</div>
-      <div class="r2-scale-item"><span class="emoji">🟡</span> R² 0,25 à 0,50 — Lien modéré</div>
-      <div class="r2-scale-item"><span class="emoji">🔴</span> R² &lt; 0,25 — Faible lien</div>
-    </div>
-  </div>
-
-  <!-- Graphiques -->
+    <!-- Graphiques -->
   <div class="analyse-charts" id="analyse-charts" style="display:none;">
 
     <!-- Graphique 1 : Double axe Y temporel -->
@@ -892,8 +873,22 @@ footer .footer-credits {
       </div>
     </div>
 
+<!-- Légende R² -->
+  <div class="r2-legend" id="as-r2-legend">
+    <div class="r2-legend-title">À propos du R²</div>
+    <div class="r2-legend-desc">
+      Le <strong>R²</strong> (coefficient de détermination) mesure à quel point deux variables évoluent ensemble.
+      Un R² de <strong>0,80</strong> signifie que 80 % des variations de la demande s'expliquent par les variations de la variable météo sélectionnée.
+      Le reste provient d'autres facteurs (jours fériés, conjoncture, etc.).
+      <br>⚠ Le R² indique une <em>corrélation</em>, pas une <em>causalité</em>.
+    </div>
+    <div class="r2-scale-item" style="margin-left:auto; flex-direction:column; gap:5px; align-items:flex-start;">
+      <div class="r2-scale-item"><span class="emoji">🟢</span> R² &gt; 0,50 — Fort lien</div>
+      <div class="r2-scale-item"><span class="emoji">🟡</span> R² 0,25 à 0,50 — Lien modéré</div>
+      <div class="r2-scale-item"><span class="emoji">🔴</span> R² &lt; 0,25 — Faible lien</div>
+    </div>
   </div>
-
+  
 </div>
 </div><!-- /portal-analyse -->
 
@@ -904,8 +899,8 @@ footer .footer-credits {
   <div class="analyse-panel-header">
     <button class="btn-retour" onclick="showAccueil()">← Retour</button>
     <div>
-      <h2 class="analyse-panel-title">Consommation par secteur × Demande</h2>
-      <p class="analyse-panel-sub">Analyse croisée — données mensuelles · 2019–2024</p>
+      <h2 class="analyse-panel-title">Consommation par secteur et Demande</h2>
+      <p class="analyse-panel-sub">Données mensuelles · 2019–2024</p>
     </div>
   </div>
 
