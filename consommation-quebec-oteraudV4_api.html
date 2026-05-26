@@ -410,7 +410,7 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
         <th onclick="sortBy('region')" id="th-region">Région <span class="sort-arrow">↕</span></th>
         <th onclick="sortBy('mois')" id="th-mois">Mois <span class="sort-arrow">↕</span></th>
         <th onclick="sortBy('secteur')" id="th-secteur">Secteur <span class="sort-arrow">↕</span></th>
-        <th onclick="sortBy('kwh')" id="th-kwh" style="text-align:right">Consommation (kWh) <span class="sort-arrow">↕</span></th>
+        <th onclick="sortBy('kwh')" id="th-kwh" style="text-align:right">Consommation (MWh) <span class="sort-arrow">↕</span></th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -666,11 +666,7 @@ const REGION_PALETTE = [
 
 const fmt = v => (v/1e6).toLocaleString('fr-CA',{maximumFractionDigits:1});
 const fmtGwh = fmt;
-const fmtKwh = v => {
-  if(v>=1e9) return (v/1e9).toLocaleString('fr-CA',{maximumFractionDigits:2})+' TWh';
-  if(v>=1e6) return (v/1e6).toLocaleString('fr-CA',{maximumFractionDigits:1})+' GWh';
-  return Math.round(v).toLocaleString('fr-CA')+' kWh';
-};
+const fmtKwh = v => (v/1e3).toLocaleString('fr-CA',{maximumFractionDigits:1})+' MWh';
 
 /* ── Populate all selects ── */
 function populateSel(id, items, allLabel) {
@@ -1389,10 +1385,10 @@ function fmtKwhDl(v) {
 function dlCSV(allData) {
   const data = getDataForDl(allData);
   const label = allData ? 'toutes-les-donnees' : 'donnees-filtrees';
-  const rows = [['Région','Mois','Secteur','Consommation (kWh)']];
+  const rows = [['Région','Mois','Secteur','Consommation (MWh)']];
   data.forEach(d => {
     const mois = new Date(d.mois+'T00:00:00').toLocaleDateString('fr-CA',{year:'numeric',month:'long'});
-    rows.push([d.region, mois, d.secteur, Math.round(d.kwh)]);
+    rows.push([d.region, mois, d.secteur, Math.round(d.kwh/1e3)]);
   });
   const csv = '\uFEFF' + rows.map(r => r.map(c => '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\r\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
@@ -1413,7 +1409,7 @@ function dlPDF(allData) {
 
   const rows = data.map(d => {
     const mois = new Date(d.mois+'T00:00:00').toLocaleDateString('fr-CA',{year:'numeric',month:'long'});
-    return `<tr><td>${d.region}</td><td>${mois}</td><td>${d.secteur}</td><td style="text-align:right">${Math.round(d.kwh).toLocaleString('fr-CA')} kWh</td></tr>`;
+    return `<tr><td>${d.region}</td><td>${mois}</td><td>${d.secteur}</td><td style="text-align:right">${Math.round(d.kwh/1e3).toLocaleString('fr-CA')} MWh</td></tr>`;
   }).join('');
 
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
@@ -1432,7 +1428,7 @@ function dlPDF(allData) {
   <h1>Consommation électrique par secteur d'activité — OTERAUD</h1>
   <div class="sub">${label} · ${data.length.toLocaleString('fr-CA')} entrées · Exporté le ${now}</div>
   <table>
-    <thead><tr><th>Région</th><th>Mois</th><th>Secteur</th><th>Consommation (kWh)</th></tr></thead>
+    <thead><tr><th>Région</th><th>Mois</th><th>Secteur</th><th>Consommation (MWh)</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <div class="footer">Source : Hydro-Québec — Données ouvertes · OTERAUD 2026 · Codage assisté par Claude (Anthropic)</div>
