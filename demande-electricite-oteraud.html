@@ -668,35 +668,61 @@ function buildPointe() {
   let d = ALL_DATA;
   if(annee) d = d.filter(x=>x.annee==annee);
 
+  /* Couleur par année — même palette que l'onglet évolution */
+  const allAnnees = [...new Set(ALL_DATA.map(x=>x.annee))].sort();
+  const anneeColor = {};
+  allAnnees.forEach((a,i) => anneeColor[a] = EVO_ANNEE_PALETTE[i % EVO_ANNEE_PALETTE.length]);
+
   const byMois = {};
   d.forEach(x => {
     const key = x.mois;
-    if(!byMois[key] || x.mw > byMois[key]) byMois[key] = x.mw;
+    if(!byMois[key] || x.mw > byMois[key]) byMois[key] = { mw: x.mw, annee: x.annee };
   });
 
   const keys   = Object.keys(byMois).sort();
-  const values = keys.map(k=>byMois[k]);
+  const values = keys.map(k => byMois[k].mw);
+  const colors = keys.map(k => anneeColor[byMois[k].annee]);
   const labels = keys.map(k => {
     const [y,m] = k.split('-');
     return new Date(+y,+m-1,1).toLocaleDateString('fr-CA',{month:'short',year:'2-digit'});
   });
-  const colors = values.map(v => v > 35000 ? '#a45a37' : v > 28000 ? '#f59e19' : '#62878b');
 
-  if(chartPointe) {
-    chartPointe.data.labels = labels;
-    chartPointe.data.datasets[0].data = values;
-    chartPointe.data.datasets[0].backgroundColor = colors;
-    chartPointe.update('active');
-  } else {
-    chartPointe = new Chart(document.getElementById('chart-pointe'), {
-      type:'bar',
-      data:{ labels, datasets:[{ label:'Demande max (MW)', data:values, backgroundColor:colors, borderRadius:4 }]},
-      options:{ responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+Math.round(ctx.parsed.y).toLocaleString('fr-CA')+' MW'}}},
-        scales:{ x:{grid:{display:false}}, y:{grid:{color:'#ede8df'}, ticks:{callback:v=>v.toLocaleString('fr-CA')+' MW'}, min:10000} }
-      }
+  /* Datasets groupés par année pour la légende (seulement si toutes les années affichées) */
+  const multiAnnee = !annee;
+  let datasets;
+  if(multiAnnee) {
+    datasets = allAnnees.map(a => {
+      const idxByAnnee = keys.map((k,i) => byMois[k].annee==a ? i : null).filter(i=>i!==null);
+      const data = keys.map((_,i) => idxByAnnee.includes(i) ? values[i] : null);
+      return {
+        label: String(a),
+        data,
+        backgroundColor: anneeColor[a],
+        borderRadius: 4,
+        skipNull: true,
+      };
     });
+  } else {
+    const color = anneeColor[+annee] || EVO_ANNEE_PALETTE[0];
+    datasets = [{ label:'Demande max (MW)', data:values, backgroundColor:color, borderRadius:4 }];
   }
+
+  if(chartPointe) { chartPointe.destroy(); chartPointe=null; }
+  chartPointe = new Chart(document.getElementById('chart-pointe'), {
+    type:'bar',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display: multiAnnee, labels:{ font:{family:'Montserrat',size:11}, boxWidth:14 } },
+        tooltip:{ callbacks:{ label:ctx=>' '+ctx.dataset.label+' : '+Math.round(ctx.parsed.y).toLocaleString('fr-CA')+' MW' }}
+      },
+      scales:{
+        x:{ grid:{display:false}, stacked:false },
+        y:{ grid:{color:'#ede8df'}, ticks:{callback:v=>v.toLocaleString('fr-CA')+' MW'}, min:10000 }
+      }
+    }
+  });
 }
 
 function buildProfil() {
