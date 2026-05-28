@@ -46,6 +46,14 @@ body { font-family: var(--font); background: var(--creme-light); color: var(--no
 }
 .nav-tab:hover { color: rgba(255,255,255,0.85); }
 .nav-tab.active { color: var(--ocre); border-bottom-color: var(--ocre); }
+.btn-mode {
+  padding: 4px 11px; border-radius: 5px; font-size: 0.68rem; font-weight: 700;
+  font-family: var(--font); cursor: pointer; letter-spacing: 0.04em;
+  border: 1.5px solid rgba(255,255,255,0.3); background: transparent;
+  color: rgba(255,255,255,0.6); transition: all 0.15s;
+}
+.btn-mode:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.btn-mode.active { background: var(--ocre); border-color: var(--ocre); color: var(--noir); }
 
 /* HEADER */
 header {
@@ -315,7 +323,14 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
   <div class="nav-tab" onclick="showPage('regions')">Régions</div>
   <div class="nav-tab" onclick="showPage('secteurs')">Secteurs</div>
   <div class="nav-tab" onclick="showPage('evolution')">Évolution historique</div>
-  <div class="nav-tab" onclick="showPage('carte')">Carte</div>
+  <div class="nav-tab" id="nav-tab-carte" onclick="showPage('carte')">Carte</div>
+
+  <!-- Bascule granularité territoriale -->
+  <div style="margin-left:auto; display:flex; align-items:center; gap:0.4rem; padding-right:1rem;">
+    <span style="font-size:0.62rem; font-weight:700; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:0.08em;">Territoire</span>
+    <button id="btn-mode-region" class="btn-mode active" onclick="basculerMode('region')">Régions admin.</button>
+    <button id="btn-mode-mrc"    class="btn-mode"        onclick="basculerMode('mrc')">MRC</button>
+  </div>
 </nav>
 
 <!-- ══════════════ PAGE ACCUEIL ══════════════ -->
@@ -367,6 +382,11 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
     <div class="filter-group">
       <label>Recherche</label>
       <input type="text" id="search" placeholder="Région, secteur…" style="min-width:210px">
+    </div>
+    <!-- Filtre région administrative (visible seulement en mode MRC) -->
+    <div class="filter-group" id="filtre-region-adm" style="display:none;">
+      <label>Région admin.</label>
+      <select id="fil-region-adm"><option value="">Toutes les régions admin.</option></select>
     </div>
     <div class="filter-group">
       <label>Région</label>
@@ -579,11 +599,15 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
 <script>
 /* ══ CONFIGURATION API ══ */
 const API_BACKEND = '/api/hydroquebec';
+const API_MRC = 'https://donnees.hydroquebec.com/api/explore/v2.1/catalog/datasets/historique-consommation-secteur-activite-mrc-mois/records';
 let ALL_DATA = [];
+let MODE_MRC = false; // false = régions admin, true = MRC
 
 /* ── Cache API mémoire (1 heure) ── */
 let _apiCache = null;
 let _apiCacheTime = null;
+let _apiCacheMRC = null;
+let _apiCacheTimeMRC = null;
 const API_CACHE_DURATION = 60 * 60 * 1000;
 
 /* ── Debounce : regroupe les appels rapides en un seul ── */
@@ -646,7 +670,101 @@ async function chargerDonnees() {
   }
 }
 
-/* ── Palette OTERAUD ── */
+/* ── Chargement des données MRC depuis l'API Hydro-Québec (paginé) ── */
+async function chargerDonneesMRC() {
+  const now = Date.now();
+  if (_apiCacheMRC && _apiCacheTimeMRC && (now - _apiCacheTimeMRC) < API_CACHE_DURATION) {
+    console.log('Données MRC servies depuis le cache mémoire local');
+    ALL_DATA = _apiCacheMRC;
+    hideLoader();
+    initSelects();
+    applyFilters();
+    document.getElementById('total-badge').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' entrées';
+    return;
+  }
+
+  showLoader('Connexion à l\'API Hydro-Québec (MRC)…');
+  try {
+    const LIMIT = 100;
+    let offset = 0;
+    let total = null;
+    let allResults = [];
+
+    do {
+      showLoader(`Chargement des données MRC… ${allResults.length.toLocaleString('fr-CA')} / ${total !== null ? total.toLocaleString('fr-CA') : '?'} entrées`);
+      const url = `${API_MRC}?limit=${LIMIT}&offset=${offset}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Erreur API MRC (' + res.status + ')');
+      const json = await res.json();
+      if (total === null) total = json.total_count;
+      allResults = allResults.concat(json.results);
+      offset += LIMIT;
+    } while (offset < total);
+
+    /* Normaliser vers le même format que les données régions :
+       { region, mois, secteur, kwh }
+       On conserve aussi region_adm pour le filtre bonus */
+    const data = allResults.map(r => ({
+      region:     r.mrc_txt,
+      region_adm: r.region_adm_qc_txt,
+      mois:       r.annee_mois,
+      secteur:    r.secteur,
+      kwh:        r.total_kwh
+    }));
+
+    ALL_DATA = data;
+    _apiCacheMRC = data;
+    _apiCacheTimeMRC = now;
+    console.log('Données MRC chargées:', ALL_DATA.length, 'entrées');
+
+    hideLoader();
+    initSelects();
+    applyFilters();
+    document.getElementById('total-badge').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' entrées';
+
+  } catch (err) {
+    document.getElementById('loader-msg').textContent = '⚠ Erreur chargement MRC : ' + err.message;
+    document.getElementById('loader-spinner').style.display = 'none';
+    console.error('Détail erreur MRC:', err);
+  }
+}
+
+/* ── Bascule entre mode Régions admin. et MRC ── */
+function basculerMode(mode) {
+  MODE_MRC = (mode === 'mrc');
+
+  /* Mettre à jour les boutons bascule */
+  document.getElementById('btn-mode-region').classList.toggle('active', !MODE_MRC);
+  document.getElementById('btn-mode-mrc').classList.toggle('active', MODE_MRC);
+
+  /* Afficher / masquer le filtre région administrative */
+  const filtreRegAdm = document.getElementById('filtre-region-adm');
+  if (filtreRegAdm) filtreRegAdm.style.display = MODE_MRC ? 'flex' : 'none';
+
+  /* Masquer la carte en mode MRC */
+  const tabCarte = document.getElementById('nav-tab-carte');
+  if (tabCarte) tabCarte.style.display = MODE_MRC ? 'none' : '';
+
+  /* Réinitialiser les graphiques */
+  [chartRegion, chartSecteurs, chartEvo].forEach(c => { if(c) { c.destroy(); } });
+  chartRegion = null; chartSecteurs = null; chartEvo = null;
+  Object.keys(chartsBuilt).forEach(k => chartsBuilt[k] = false);
+
+  /* Mettre à jour le sous-titre de l'en-tête */
+  const subtitle = document.querySelector('header .header-left p');
+  if (subtitle) {
+    subtitle.textContent = MODE_MRC
+      ? 'MRC du Québec · Données Hydro-Québec · 2016–2025'
+      : 'Régions administratives du Québec · Données Hydro-Québec · 2016–2025';
+  }
+
+  /* Charger les données correspondantes */
+  if (MODE_MRC) {
+    chargerDonneesMRC();
+  } else {
+    chargerDonnees();
+  }
+}
 const COLORS = {
   teal:  '#62878b', ocre: '#f59e19', terre: '#a45a37',
   beige: '#c4987c', noir: '#282828', creme: '#e7e1d5'
@@ -682,9 +800,15 @@ function initSelects() {
   const REGIONS  = [...new Set(ALL_DATA.map(d=>d.region))].sort((a,b)=>a.localeCompare(b,'fr'));
   const SECTEURS = [...new Set(ALL_DATA.map(d=>d.secteur))].sort();
   const ANNEES   = [...new Set(ALL_DATA.map(d=>d.mois.substring(0,4)))].sort();
-  ['fil-region'].forEach(id => populateSel(id, REGIONS, 'Toutes les régions'));
+  ['fil-region'].forEach(id => populateSel(id, REGIONS, MODE_MRC ? 'Toutes les MRC' : 'Toutes les régions'));
   ['fil-secteur','reg-secteur','evo-secteur','carte-secteur'].forEach(id => populateSel(id, SECTEURS, id==='fil-secteur'?'Tous les secteurs':'Tous'));
   ['fil-annee','reg-annee','carte-annee'].forEach(id => populateSel(id, ANNEES, id==='fil-annee'?'Toutes les années':'Toutes'));
+
+  /* En mode MRC : peupler le filtre région administrative */
+  if (MODE_MRC) {
+    const REGIONS_ADM = [...new Set(ALL_DATA.map(d=>d.region_adm).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+    populateSel('fil-region-adm', REGIONS_ADM, 'Toutes les régions admin.');
+  }
 
   /* Construire la liste de cases à cocher pour le multi-sélecteur régions (onglet Secteurs) */
   const list = document.getElementById('sec-region-list');
@@ -1133,14 +1257,16 @@ const PAGE_SIZE=50;
 let filtered=[...ALL_DATA], sortCol='mois', sortAsc=true, page=1;
 
 function applyFilters() {
-  const q      = document.getElementById('search').value.toLowerCase().trim();
-  const region = document.getElementById('fil-region').value;
-  const secteur= document.getElementById('fil-secteur').value;
-  const annee  = document.getElementById('fil-annee').value;
+  const q         = document.getElementById('search').value.toLowerCase().trim();
+  const region    = document.getElementById('fil-region').value;
+  const secteur   = document.getElementById('fil-secteur').value;
+  const annee     = document.getElementById('fil-annee').value;
+  const regionAdm = MODE_MRC ? document.getElementById('fil-region-adm').value : '';
   filtered = ALL_DATA.filter(d=>{
-    if(region  && d.region!==region)  return false;
-    if(secteur && d.secteur!==secteur) return false;
-    if(annee   && !d.mois.startsWith(annee)) return false;
+    if(region    && d.region!==region)       return false;
+    if(regionAdm && d.region_adm!==regionAdm) return false;
+    if(secteur   && d.secteur!==secteur)      return false;
+    if(annee     && !d.mois.startsWith(annee)) return false;
     if(q && !((d.region+d.secteur+d.mois).toLowerCase().includes(q))) return false;
     return true;
   });
@@ -1217,6 +1343,7 @@ function resetFilters(){
   document.getElementById('fil-region').value='';
   document.getElementById('fil-secteur').value='';
   document.getElementById('fil-annee').value='';
+  if(document.getElementById('fil-region-adm')) document.getElementById('fil-region-adm').value='';
   applyFilters();
 }
 // Debounce sur la recherche texte (300ms) — les selects restent instantanés
@@ -1225,6 +1352,7 @@ document.getElementById('search').addEventListener('input', applyFiltersDebounce
 document.getElementById('fil-region').addEventListener('change',applyFilters);
 document.getElementById('fil-secteur').addEventListener('change',applyFilters);
 document.getElementById('fil-annee').addEventListener('change',applyFilters);
+document.getElementById('fil-region-adm').addEventListener('change',applyFilters);
 
 /* ── Page switching ── */
 let chartsBuilt={regions:false,secteurs:false,evolution:false,carte:false};
