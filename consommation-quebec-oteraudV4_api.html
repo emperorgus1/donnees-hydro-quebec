@@ -602,7 +602,7 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
 <script>
 /* ══ CONFIGURATION API ══ */
 const API_BACKEND = '/api/hydroquebec';
-const API_MRC_BACKEND = '/api/hydroquebec-mrc';
+const API_MRC_BACKEND = '/data/mrc.json';
 let ALL_DATA = [];
 let MODE_MRC = false; // false = régions admin, true = MRC
 
@@ -693,31 +693,26 @@ async function chargerDonneesMRC() {
   showLoader('Chargement des données MRC…');
   try {
     const res = await fetch(API_MRC_BACKEND);
+    if (!res.ok) throw new Error('Fichier MRC introuvable (' + res.status + '). Vérifiez que /data/mrc.json est bien déployé.');
 
-    /* Diagnostic précis selon le code HTTP */
-    if (!res.ok) {
-      if (res.status === 404)
-        throw new Error('La fonction /api/hydroquebec-mrc est introuvable. Vérifiez que le fichier hydroquebec-mrc.js est bien déployé dans netlify/functions/.');
-      if (res.status === 500)
-        throw new Error('Erreur interne de la fonction Netlify (500). Consultez les logs Netlify.');
-      throw new Error('Erreur serveur MRC (' + res.status + ')');
-    }
+    const payload = await res.json();
 
-    const data = await res.json();
+    /* Décoder le format compact : {mrcs, adms, mois, sects, data:[ri,ai,mi,si,kwh]} */
+    if (!payload.data || !payload.mrcs)
+      throw new Error('Format du fichier MRC invalide.');
 
-    /* La fonction peut retourner {error: ...} si elle a planté côté serveur */
-    if (data && data.error)
-      throw new Error('Erreur fonction Netlify : ' + data.error);
-
-    if (!Array.isArray(data) || data.length === 0)
-      throw new Error('Aucune donnée MRC reçue — vérifiez les logs Netlify.');
+    const data = payload.data.map(([ri, ai, mi, si, kwh]) => ({
+      region:     payload.mrcs[ri],
+      region_adm: payload.adms[ai],
+      mois:       payload.mois[mi],
+      secteur:    payload.sects[si],
+      kwh:        kwh
+    }));
 
     ALL_DATA = data;
     _apiCacheMRC = data;
     _apiCacheTimeMRC = now;
-
-    const cached = res.headers.get('X-Cache') === 'HIT';
-    console.log('Données MRC chargées:', ALL_DATA.length, 'entrées', cached ? '(cache serveur)' : '(API fraîche)');
+    console.log('Données MRC chargées:', ALL_DATA.length, 'entrées');
 
     hideLoader();
     initSelects();
