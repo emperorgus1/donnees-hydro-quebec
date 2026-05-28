@@ -599,7 +599,7 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
 <script>
 /* ══ CONFIGURATION API ══ */
 const API_BACKEND = '/api/hydroquebec';
-const API_MRC = 'https://donnees.hydroquebec.com/api/explore/v2.1/catalog/datasets/historique-consommation-secteur-activite-mrc-mois/records';
+const API_MRC_BACKEND = '/api/hydroquebec-mrc';
 let ALL_DATA = [];
 let MODE_MRC = false; // false = régions admin, true = MRC
 
@@ -673,7 +673,7 @@ async function chargerDonnees() {
   }
 }
 
-/* ── Chargement des données MRC depuis l'API Hydro-Québec (paginé) ── */
+/* ── Chargement des données MRC via la fonction Netlify ── */
 async function chargerDonneesMRC() {
   const now = Date.now();
   if (_apiCacheMRC && _apiCacheTimeMRC && (now - _apiCacheTimeMRC) < API_CACHE_DURATION) {
@@ -687,46 +687,26 @@ async function chargerDonneesMRC() {
     return;
   }
 
-  showLoader('Connexion à l\'API Hydro-Québec (MRC)…');
+  showLoader('Chargement des données MRC…');
   try {
-    const LIMIT = 100;
-    let offset = 0;
-    let total = null;
-    let allResults = [];
-
-    do {
-      showLoader(`Chargement des données MRC… ${allResults.length.toLocaleString('fr-CA')} / ${total !== null ? total.toLocaleString('fr-CA') : '?'} entrées`);
-      const url = `${API_MRC}?limit=${LIMIT}&offset=${offset}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Erreur API MRC (' + res.status + ')');
-      const json = await res.json();
-      if (total === null) total = json.total_count;
-      allResults = allResults.concat(json.results);
-      offset += LIMIT;
-    } while (offset < total);
-
-    /* Normaliser vers le même format que les données régions :
-       { region, mois, secteur, kwh }
-       On conserve aussi region_adm pour le filtre bonus */
-    const data = allResults.map(r => ({
-      region:     r.mrc_txt,
-      region_adm: r.region_adm_qc_txt,
-      mois:       r.annee_mois,
-      secteur:    r.secteur,
-      kwh:        r.total_kwh
-    }));
+    const res = await fetch(API_MRC_BACKEND);
+    if (!res.ok) throw new Error('Erreur serveur MRC (' + res.status + ')');
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0)
+      throw new Error('Aucune donnée MRC reçue');
 
     ALL_DATA = data;
     _apiCacheMRC = data;
     _apiCacheTimeMRC = now;
-    console.log('Données MRC chargées:', ALL_DATA.length, 'entrées');
+
+    const cached = res.headers.get('X-Cache') === 'HIT';
+    console.log('Données MRC chargées:', ALL_DATA.length, 'entrées', cached ? '(cache serveur)' : '(API fraîche)');
 
     hideLoader();
     initSelects();
     applyFilters();
     document.getElementById('total-badge').textContent = ALL_DATA.length.toLocaleString('fr-CA') + ' entrées';
-    /* Rafraîchir les graphiques de l'onglet courant */
-    showPage(currentPage);
+    if(currentPage && currentPage !== 'accueil' && currentPage !== 'tableau') showPage(currentPage);
 
   } catch (err) {
     document.getElementById('loader-msg').textContent = '⚠ Erreur chargement MRC : ' + err.message;
