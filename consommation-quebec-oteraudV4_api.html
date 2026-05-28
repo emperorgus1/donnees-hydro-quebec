@@ -386,14 +386,19 @@ footer .footer-credits { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.
       <label>Recherche</label>
       <input type="text" id="search" placeholder="Région, secteur…" style="min-width:210px">
     </div>
-    <!-- Filtre région administrative (visible seulement en mode MRC) -->
+    <!-- Mode régions admin : filtre simple -->
+    <div class="filter-group" id="filtre-region-std">
+      <label id="lbl-fil-region">Région</label>
+      <select id="fil-region"><option value="">Toutes les régions</option></select>
+    </div>
+    <!-- Mode MRC : filtre cascade région admin → MRC (masqué en mode régions) -->
     <div class="filter-group" id="filtre-region-adm" style="display:none;">
       <label>Région admin.</label>
-      <select id="fil-region-adm"><option value="">Toutes les régions admin.</option></select>
+      <select id="fil-region-adm" onchange="onFilRegionAdmChange()"><option value="">Toutes les régions</option></select>
     </div>
-    <div class="filter-group">
-      <label>Région</label>
-      <select id="fil-region"><option value="">Toutes les régions</option></select>
+    <div class="filter-group" id="filtre-mrc" style="display:none;">
+      <label>MRC</label>
+      <select id="fil-mrc"><option value="">Toutes les MRC</option></select>
     </div>
     <div class="filter-group">
       <label>Secteur</label>
@@ -748,9 +753,10 @@ function basculerMode(mode) {
   document.getElementById('btn-mode-region').classList.toggle('active', !MODE_MRC);
   document.getElementById('btn-mode-mrc').classList.toggle('active', MODE_MRC);
 
-  /* Afficher / masquer le filtre région administrative */
-  const filtreRegAdm = document.getElementById('filtre-region-adm');
-  if (filtreRegAdm) filtreRegAdm.style.display = MODE_MRC ? 'flex' : 'none';
+  /* Afficher / masquer les filtres selon le mode */
+  document.getElementById('filtre-region-std').style.display  = MODE_MRC ? 'none' : 'flex';
+  document.getElementById('filtre-region-adm').style.display  = MODE_MRC ? 'flex' : 'none';
+  document.getElementById('filtre-mrc').style.display         = MODE_MRC ? 'flex' : 'none';
 
   /* Masquer la carte en mode MRC */
   const tabCarte = document.getElementById('nav-tab-carte');
@@ -812,14 +818,29 @@ function initSelects() {
   const REGIONS  = [...new Set(ALL_DATA.map(d=>d.region))].sort((a,b)=>a.localeCompare(b,'fr'));
   const SECTEURS = [...new Set(ALL_DATA.map(d=>d.secteur))].sort();
   const ANNEES   = [...new Set(ALL_DATA.map(d=>d.mois.substring(0,4)))].sort();
-  ['fil-region'].forEach(id => populateSel(id, REGIONS, MODE_MRC ? 'Toutes les MRC' : 'Toutes les régions'));
+  ['fil-region'].forEach(id => populateSel(id, REGIONS, 'Toutes les régions'));
   ['fil-secteur','reg-secteur','evo-secteur','carte-secteur'].forEach(id => populateSel(id, SECTEURS, id==='fil-secteur'?'Tous les secteurs':'Tous'));
   ['fil-annee','reg-annee','carte-annee'].forEach(id => populateSel(id, ANNEES, id==='fil-annee'?'Toutes les années':'Toutes'));
 
-  /* En mode MRC : peupler le filtre région administrative */
   if (MODE_MRC) {
+    /* Peupler le filtre région administrative */
     const REGIONS_ADM = [...new Set(ALL_DATA.map(d=>d.region_adm).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
-    populateSel('fil-region-adm', REGIONS_ADM, 'Toutes les régions admin.');
+    populateSel('fil-region-adm', REGIONS_ADM, 'Toutes les régions');
+
+    /* Construire l'index region_adm → liste de MRC (pour la cascade) */
+    window._mrcParRegion = {};
+    ALL_DATA.forEach(d => {
+      if (!d.region_adm) return;
+      if (!window._mrcParRegion[d.region_adm]) window._mrcParRegion[d.region_adm] = new Set();
+      window._mrcParRegion[d.region_adm].add(d.region);
+    });
+    /* Convertir les Sets en tableaux triés */
+    Object.keys(window._mrcParRegion).forEach(k => {
+      window._mrcParRegion[k] = [...window._mrcParRegion[k]].sort((a,b)=>a.localeCompare(b,'fr'));
+    });
+
+    /* Peupler le filtre MRC avec toutes les MRC par défaut */
+    populateSel('fil-mrc', REGIONS, 'Toutes les MRC');
   }
 
   /* Construire la liste de cases à cocher pour le multi-sélecteur régions (onglet Secteurs) */
@@ -1262,21 +1283,43 @@ function buildEvoChart() {
 const PAGE_SIZE=50;
 let filtered=[...ALL_DATA], sortCol='mois', sortAsc=true, page=1;
 
+/* ── Cascade région admin → MRC ── */
+function onFilRegionAdmChange() {
+  const selAdm = document.getElementById('fil-region-adm').value;
+  const mrcSel = document.getElementById('fil-mrc');
+  const curMRC = mrcSel.value;
+
+  /* Repeupler la liste MRC selon la région choisie */
+  const mrcList = selAdm && window._mrcParRegion && window._mrcParRegion[selAdm]
+    ? window._mrcParRegion[selAdm]
+    : (window._mrcParRegion ? Object.values(window._mrcParRegion).flat().sort((a,b)=>a.localeCompare(b,'fr')) : []);
+
+  populateSel('fil-mrc', mrcList, 'Toutes les MRC');
+
+  /* Remettre la valeur si elle est toujours disponible */
+  if (curMRC && [...mrcSel.options].some(o => o.value === curMRC)) mrcSel.value = curMRC;
+
+  applyFilters();
+}
+
 function applyFilters() {
   const q         = document.getElementById('search').value.toLowerCase().trim();
-  const region    = document.getElementById('fil-region').value;
+  const regionAdm = MODE_MRC ? document.getElementById('fil-region-adm').value : '';
+  const mrc       = MODE_MRC ? document.getElementById('fil-mrc').value : '';
+  const region    = MODE_MRC ? '' : document.getElementById('fil-region').value;
   const secteur   = document.getElementById('fil-secteur').value;
   const annee     = document.getElementById('fil-annee').value;
-  const regionAdm = MODE_MRC ? document.getElementById('fil-region-adm').value : '';
-  filtered = ALL_DATA.filter(d=>{
-    if(region    && d.region!==region)       return false;
-    if(regionAdm && d.region_adm!==regionAdm) return false;
-    if(secteur   && d.secteur!==secteur)      return false;
-    if(annee     && !d.mois.startsWith(annee)) return false;
-    if(q && !((d.region+d.secteur+d.mois).toLowerCase().includes(q))) return false;
+
+  filtered = ALL_DATA.filter(d => {
+    if(region    && d.region !== region)          return false;
+    if(regionAdm && d.region_adm !== regionAdm)   return false;
+    if(mrc       && d.region !== mrc)             return false;
+    if(secteur   && d.secteur !== secteur)         return false;
+    if(annee     && !d.mois.startsWith(annee))     return false;
+    if(q && !((d.region + d.secteur + d.mois).toLowerCase().includes(q))) return false;
     return true;
   });
-  applySort(); page=1; render();
+  applySort(); page = 1; render();
 }
 function sortBy(col){
   if(sortCol===col) sortAsc=!sortAsc; else{sortCol=col;sortAsc=true;}
@@ -1349,16 +1392,25 @@ function resetFilters(){
   document.getElementById('fil-region').value='';
   document.getElementById('fil-secteur').value='';
   document.getElementById('fil-annee').value='';
-  if(document.getElementById('fil-region-adm')) document.getElementById('fil-region-adm').value='';
+  if(document.getElementById('fil-region-adm')) {
+    document.getElementById('fil-region-adm').value='';
+    /* Remettre toutes les MRC dans la liste */
+    if(MODE_MRC && window._mrcParRegion) {
+      const allMRC = Object.values(window._mrcParRegion).flat().sort((a,b)=>a.localeCompare(b,'fr'));
+      populateSel('fil-mrc', allMRC, 'Toutes les MRC');
+    }
+    document.getElementById('fil-mrc').value='';
+  }
   applyFilters();
 }
 // Debounce sur la recherche texte (300ms) — les selects restent instantanés
 const applyFiltersDebounced = debounce(applyFilters, 300);
 document.getElementById('search').addEventListener('input', applyFiltersDebounced);
-document.getElementById('fil-region').addEventListener('change',applyFilters);
-document.getElementById('fil-secteur').addEventListener('change',applyFilters);
-document.getElementById('fil-annee').addEventListener('change',applyFilters);
-document.getElementById('fil-region-adm').addEventListener('change',applyFilters);
+document.getElementById('fil-region').addEventListener('change', applyFilters);
+document.getElementById('fil-secteur').addEventListener('change', applyFilters);
+document.getElementById('fil-annee').addEventListener('change', applyFilters);
+document.getElementById('fil-mrc').addEventListener('change', applyFilters);
+/* fil-region-adm est géré par onchange="onFilRegionAdmChange()" directement dans le HTML */
 
 /* ── Page switching ── */
 let chartsBuilt={regions:false,secteurs:false,evolution:false,carte:false};
