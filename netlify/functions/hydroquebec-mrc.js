@@ -1,12 +1,11 @@
 /**
  * Fonction Netlify : /api/hydroquebec-mrc
  *
- * Charge l'intégralité des données de consommation par MRC depuis l'API
- * Hydro-Québec (paginées par 100), les normalise et les retourne en une
- * seule réponse JSON.
- *
- * Format de sortie : tableau d'objets
- *   { region, region_adm, mois, secteur, kwh }
+ * Charge toutes les données MRC en parallèle pour battre le timeout de 10s.
+ * Stratégie :
+ *   1. Premier appel pour connaître le total et la première page
+ *   2. Tous les appels restants en parallèle par lots de 20 (Promise.all)
+ *   3. Normalisation et retour en une seule réponse
  */
 
 const API_URL =
@@ -14,13 +13,25 @@ const API_URL =
   'historique-consommation-secteur-activite-mrc-mois/records';
 
 const LIMIT = 100;
+const BATCH = 20; // appels simultanés par lot
 
-// Cache en mémoire (dure le temps de vie de l'instance Lambda, ~5-15 min)
+// Cache mémoire Lambda (~10 min)
 let _cache = null;
 let _cacheTime = null;
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const CACHE_MS = 10 * 60 * 1000;
+
+async function fetchPage(offset) {
+  const url = `${API_URL}?limit=${LIMIT}&offset=${offset}` +
+    `&select=mrc_txt,region_adm_qc_txt,annee_mois,secteur,total_kwh`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`API HQ MRC ${res.status} à offset ${offset}`);
+  const json = await res.json();
+  return json.results;
+}
 
 exports.handler = async function (event, context) {
+  context.callbackWaitsForEmptyEventLoop = false;
+
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
@@ -28,37 +39,33 @@ exports.handler = async function (event, context) {
   };
 
   try {
-    // Servir depuis le cache si disponible
     const now = Date.now();
-    if (_cache && _cacheTime && now - _cacheTime < CACHE_DURATION) {
-      return {
-        statusCode: 200,
-        headers: { ...headers, 'X-Cache': 'HIT' },
-        body: _cache,
-      };
+    if (_cache && _cacheTime && now - _cacheTime < CACHE_MS) {
+      return { statusCode: 200, headers: { ...headers, 'X-Cache': 'HIT' }, body: _cache };
     }
 
-    // Pagination côté serveur
-    let offset = 0;
-    let total = null;
-    const allResults = [];
+    // 1. Premier appel : récupérer le total et la première page
+    const firstRes = await fetch(`${API_URL}?limit=${LIMIT}&offset=0` +
+      `&select=mrc_txt,region_adm_qc_txt,annee_mois,secteur,total_kwh`);
+    if (!firstRes.ok) throw new Error(`API HQ MRC ${firstRes.status}`);
+    const firstJson = await firstRes.json();
+    const total = firstJson.total_count;
+    const allResults = [...firstJson.results];
 
-    do {
-      const url = `${API_URL}?limit=${LIMIT}&offset=${offset}` +
-        `&select=mrc_txt,region_adm_qc_txt,annee_mois,secteur,total_kwh`;
+    // 2. Calculer les offsets restants
+    const offsets = [];
+    for (let offset = LIMIT; offset < total; offset += LIMIT) {
+      offsets.push(offset);
+    }
 
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`API Hydro-Québec MRC : ${res.status} ${res.statusText}`);
-      }
+    // 3. Fetch parallèle par lots de BATCH
+    for (let i = 0; i < offsets.length; i += BATCH) {
+      const batch = offsets.slice(i, i + BATCH);
+      const pages = await Promise.all(batch.map(fetchPage));
+      pages.forEach(p => allResults.push(...p));
+    }
 
-      const json = await res.json();
-      if (total === null) total = json.total_count;
-      allResults.push(...json.results);
-      offset += LIMIT;
-    } while (offset < total);
-
-    // Normaliser vers le même format que les données régions
+    // 4. Normaliser
     const data = allResults.map(r => ({
       region:     r.mrc_txt,
       region_adm: r.region_adm_qc_txt,
@@ -68,18 +75,15 @@ exports.handler = async function (event, context) {
     }));
 
     const body = JSON.stringify(data);
-
-    // Mettre en cache
     _cache = body;
     _cacheTime = now;
 
-    return {
-      statusCode: 200,
-      headers: { ...headers, 'X-Cache': 'MISS' },
-      body,
-    };
+    console.log(`MRC chargé : ${data.length} entrées en ${Date.now() - now}ms`);
+
+    return { statusCode: 200, headers: { ...headers, 'X-Cache': 'MISS' }, body };
+
   } catch (err) {
-    console.error('Erreur hydroquebec-mrc:', err);
+    console.error('hydroquebec-mrc error:', err.message);
     return {
       statusCode: 500,
       headers,
